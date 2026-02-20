@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Brain, ArrowRight, Check, X, Globe, Cpu, Lock, ChevronRight, Activity, Users, Database, Layers, Rocket, AlertTriangle, Terminal, Hourglass, Star, Play, Command, Github, Twitter } from 'lucide-react';
 import { Logo } from './Logo';
 import { lockSession, unlockSession } from '../utils/security';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '../lib/supabase';
 
 interface LandingPageProps {
@@ -423,24 +421,96 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </div>
 
             {supabase ? (
-              <Auth
-                supabaseClient={supabase}
-                appearance={{
-                  theme: ThemeSupa,
-                  variables: {
-                    default: {
-                      colors: {
-                        brand: '#3b82f6',
-                        brandAccent: '#2563eb',
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={async () => {
+                    if (!supabase) return;
+                    const { error } = await supabase.auth.signInWithOAuth({
+                      provider: 'google',
+                      options: {
+                        redirectTo: window.location.origin,
+                        queryParams: {
+                          access_type: 'offline',
+                          prompt: 'consent',
+                        },
                       }
+                    });
+                    if (error) {
+                      console.error("Google login error:", error);
+                      alert("Error with Google Login: " + error.message);
                     }
-                  }
-                }}
-                theme="dark"
-                providers={['google']}
-                magicLink={true}
-                onlyThirdPartyProviders={false}
-              />
+                  }}
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-xl border border-white/10 hover:bg-white/5 hover:border-white/20 text-white font-bold transition-all bg-[#0A0A0A] shadow-[0_4px_14px_0_rgba(0,0,0,0.39)] hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)]"
+                >
+                  <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  <span className="font-mono uppercase text-sm tracking-wide">Sign in with Google</span>
+                </button>
+
+                <div className="relative flex items-center py-4">
+                  <div className="flex-grow border-t border-white/10"></div>
+                  <span className="flex-shrink-0 px-4 text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Or Access Key</span>
+                  <div className="flex-grow border-t border-white/10"></div>
+                </div>
+
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div>
+                    <input
+                      type="text"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono text-xs tracking-wide"
+                      placeholder="ENTER PILOT ID (E.G. PILOT-01)"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                    />
+                  </div>
+                  {username === 'Client_Login' && (
+                    <div className="animate-enter">
+                      <input
+                        type="password"
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono text-xs tracking-wide"
+                        placeholder="ENTER OVERRIDE PASSWORD"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  {loginError && (
+                    <div className="text-red-400 text-xs font-mono bg-red-900/10 p-3 rounded-xl border border-red-900/30 flex items-center gap-2">
+                      <AlertTriangle size={14} /> {loginError}
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={isAuthenticating}
+                    className="w-full py-4 rounded-xl font-bold text-xs tracking-[0.1em] transition-all bg-white/5 border border-white/10 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 font-mono uppercase"
+                  >
+                    {isAuthenticating ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full border-2 border-zinc-400 border-t-transparent animate-spin"></span>
+                        Authenticating...
+                      </span>
+                    ) : (
+                      <>Initialize <ChevronRight size={14} /></>
+                    )}
+                  </button>
+                </form>
+              </div>
             ) : (
               <div className="p-4 bg-red-900/10 border border-red-900/20 rounded-xl text-red-400 text-xs text-center font-bold flex items-center justify-center gap-2 font-mono">
                 <AlertTriangle size={14} /> Database connection not established.
@@ -544,8 +614,8 @@ const PricingCard = ({ tier, price, desc, features, highlight, onSelect }: any) 
           {features.map((f: string, i: number) => (
             <div key={i} className="flex items-center gap-4 group/item">
               <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${highlight
-                  ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
-                  : 'border-zinc-800 bg-zinc-900 text-zinc-600'
+                ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                : 'border-zinc-800 bg-zinc-900 text-zinc-600'
                 }`}>
                 <Check size={10} strokeWidth={3} />
               </div>
@@ -559,8 +629,8 @@ const PricingCard = ({ tier, price, desc, features, highlight, onSelect }: any) 
         <button
           onClick={onSelect}
           className={`w-full py-5 rounded-2xl font-bold text-xs tracking-[0.2em] uppercase transition-all duration-300 relative overflow-hidden group/btn font-mono ${highlight
-              ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.1)]'
-              : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
+            ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.1)]'
+            : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
             }`}
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
