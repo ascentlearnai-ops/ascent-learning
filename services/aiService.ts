@@ -6,9 +6,9 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Model selection - use free models that work reliably
 const MODELS = {
-  primary: "aurora-alpha",                       // Aurora Alpha (fast, elite quality)
-  fallback: "meta-llama/llama-3.3-70b-instruct", // Llama 3.3 70B (free backup)
-  test: "google/gemini-2.0-flash-exp:free"       // Gemini for testing
+  primary: "nousresearch/hermes-3-llama-3.1-405b:free", // Hermes 3 405B (elite quality, free)
+  fallback: "google/gemma-3-12b-it:free",              // Gemma 3 12B (fast, high quality backup)
+  test: "google/gemini-2.0-flash-exp:free"             // Gemini for testing
 };
 
 // Start with primary, but allow override
