@@ -114,7 +114,15 @@ const App: React.FC = () => {
           setCurrentUsername(email);
           localStorage.setItem('ascent_username', email);
           localStorage.setItem('ascent_session', 'true');
-          const currentTier = localStorage.getItem('ascent_user_tier') || 'Initiate';
+
+          // Auto-upgrade specific users to Scholar Tier
+          const scholarEmails = ['ascentlearnai@gmail.com', 'pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com'];
+          let currentTier = localStorage.getItem('ascent_user_tier') || 'Initiate';
+
+          if (email && scholarEmails.includes(email.toLowerCase())) {
+            currentTier = 'Scholar';
+          }
+
           localStorage.setItem('ascent_user_tier', currentTier);
           setUserTier(currentTier);
           initIdleMonitor(handleLogout);
@@ -128,7 +136,16 @@ const App: React.FC = () => {
           setCurrentUsername(email);
           localStorage.setItem('ascent_username', email);
           localStorage.setItem('ascent_session', 'true');
-          const currentTier = localStorage.getItem('ascent_user_tier') || 'Initiate';
+
+          // Auto-upgrade specific users to Scholar Tier
+          const scholarEmails = ['ascentlearnai@gmail.com', 'pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com'];
+          let currentTier = localStorage.getItem('ascent_user_tier') || 'Initiate';
+
+          if (email && scholarEmails.includes(email.toLowerCase())) {
+            currentTier = 'Scholar';
+            localStorage.setItem('ascent_user_tier', currentTier);
+          }
+
           setUserTier(currentTier);
           initIdleMonitor(handleLogout);
         } else {
@@ -489,8 +506,8 @@ const NavItem = ({ icon, label, active, onClick }: any) => (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 mb-1 group relative overflow-hidden ${active
-        ? 'bg-primary-600/10 text-white shadow-lg'
-        : 'text-zinc-500 hover:text-white hover:bg-white/5'
+      ? 'bg-primary-600/10 text-white shadow-lg'
+      : 'text-zinc-500 hover:text-white hover:bg-white/5'
       }`}
   >
     {active && (
@@ -505,8 +522,8 @@ const TopNavLink = ({ active, onClick, label, icon }: any) => (
   <button
     onClick={onClick}
     className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-200 ease-out flex items-center gap-2 relative overflow-hidden group ${active
-        ? 'text-white shadow-lg bg-white/10'
-        : 'text-zinc-500 hover:text-white hover:bg-white/5'
+      ? 'text-white shadow-lg bg-white/10'
+      : 'text-zinc-500 hover:text-white hover:bg-white/5'
       }`}
   >
     {active && <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50"></div>}
