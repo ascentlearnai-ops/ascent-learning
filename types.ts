@@ -1,5 +1,5 @@
 
-export type ResourceType = 'YOUTUBE' | 'PDF' | 'TEXT' | 'AUDIO';
+export type ResourceType = 'YOUTUBE' | 'PDF' | 'TEXT' | 'AUDIO' | 'VOICE';
 
 export interface Flashcard {
   id: string;

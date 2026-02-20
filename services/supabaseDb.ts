@@ -29,6 +29,7 @@ const mapResource = (row: any): Resource => ({
 });
 
 export const getResources = async (): Promise<Resource[]> => {
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from('resources')
     .select(`
@@ -47,6 +48,7 @@ export const getResources = async (): Promise<Resource[]> => {
 };
 
 export const getResourceById = async (id: string): Promise<Resource | undefined> => {
+  if (!supabase) return undefined;
   const { data, error } = await supabase
     .from('resources')
     .select(`
@@ -62,11 +64,13 @@ export const getResourceById = async (id: string): Promise<Resource | undefined>
 };
 
 export const createResource = async (resource: Resource): Promise<void> => {
+  if (!supabase) throw new Error('Supabase client is not configured');
   // 1. Insert Resource
+  const userResponse = await supabase.auth.getUser();
   const { data: resData, error: resError } = await supabase
     .from('resources')
     .insert({
-      user_id: (await supabase.auth.getUser()).data.user?.id, // Requires Auth
+      user_id: userResponse.data.user?.id, // Requires Auth
       title: resource.title,
       type: resource.type,
       original_content: resource.originalContent,

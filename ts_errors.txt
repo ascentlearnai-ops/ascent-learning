@@ -1,0 +1,20 @@
+﻿components/APCenter.tsx(63,29): error TS2554: Expected 3 arguments, but got 1.
+components/APCenter.tsx(64,26): error TS2554: Expected 4 arguments, but got 2.
+components/APCenter.tsx(101,26): error TS2554: Expected 4 arguments, but got 2.
+components/ResourceView.tsx(605,33): error TS2504: Type '{ stream: AsyncGenerator<string, void, unknown>; }' must have a '[Symbol.asyncIterator]()' method that returns an async iterator.
+components/UploadModal.tsx(149,9): error TS2322: Type '"YOUTUBE" | "TEXT" | "VOICE"' is not assignable to type 'ResourceType'.
+  Type '"VOICE"' is not assignable to type 'ResourceType'.
+services/geminiService.backup.ts(1,53): error TS2307: Cannot find module '@google/generative-ai' or its corresponding type declarations.
+services/geminiService.backup.ts(601,15): error TS7006: Parameter 'l' implicitly has an 'any' type.
+services/geminiService.backup.ts(602,12): error TS7006: Parameter 'l' implicitly has an 'any' type.
+services/geminiService.backup.ts(603,15): error TS7006: Parameter 'l' implicitly has an 'any' type.
+services/geminiService.ts(1,53): error TS2307: Cannot find module '@google/generative-ai' or its corresponding type declarations.
+services/geminiService.ts(601,15): error TS7006: Parameter 'l' implicitly has an 'any' type.
+services/geminiService.ts(602,12): error TS7006: Parameter 'l' implicitly has an 'any' type.
+services/geminiService.ts(603,15): error TS7006: Parameter 'l' implicitly has an 'any' type.
+services/supabaseDb.ts(32,33): error TS18047: 'supabase' is possibly 'null'.
+services/supabaseDb.ts(50,33): error TS18047: 'supabase' is possibly 'null'.
+services/supabaseDb.ts(66,52): error TS18047: 'supabase' is possibly 'null'.
+services/supabaseDb.ts(69,23): error TS18047: 'supabase' is possibly 'null'.
+services/supabaseDb.ts(94,11): error TS18047: 'supabase' is possibly 'null'.
+services/supabaseDb.ts(106,11): error TS18047: 'supabase' is possibly 'null'.

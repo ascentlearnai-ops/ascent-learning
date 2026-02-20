@@ -4,9 +4,9 @@ import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits
 
 // Initialize API with environment variable
 const getApiKey = () => {
-  const key = import.meta.env.VITE_GEMINI_API_KEY || 
-              import.meta.env.VITE_API_KEY || 
-              (typeof process !== 'undefined' ? process.env.VITE_GEMINI_API_KEY : null);
+  const key = import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.VITE_API_KEY ||
+    (typeof process !== 'undefined' ? process.env.VITE_GEMINI_API_KEY : null);
   return key || '';
 };
 
@@ -81,7 +81,7 @@ const parseAIResponse = (text: string | undefined): any => {
       .replace(/^\s*\[?\s*/, '')
       .replace(/\s*\]?\s*$/, '')
       .trim();
-    
+
     if (cleanText.startsWith('[') || cleanText.startsWith('{')) {
       return JSON.parse(cleanText);
     }
@@ -100,7 +100,7 @@ const cleanHtml = (text: string | undefined): string => {
     .replace(/```xml\n?/gi, '')
     .replace(/```\n?/g, '')
     .trim();
-  
+
   const firstTagIndex = cleaned.indexOf('<');
   if (firstTagIndex > 0) {
     cleaned = cleaned.substring(firstTagIndex);
@@ -132,38 +132,38 @@ const smartGenerate = async <T>(
 
       const modelName = MODEL_CASCADE[modelIndex];
       const model = ai.getGenerativeModel({ model: modelName });
-      
+
       console.log(`🤖 Using model: ${modelName} (attempt ${attempt + 1})`);
-      
+
       const result = await generateFn(model);
-      
+
       // Cache successful result
       if (cacheKey && result) {
         setCachedResponse(cacheKey, result);
       }
-      
+
       return result;
-      
+
     } catch (error: any) {
       console.warn(`Attempt ${attempt + 1} failed:`, error.message);
-      
+
       const errorMsg = error.message?.toLowerCase() || '';
       const isRateLimit = errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('rate limit');
       const isModelError = errorMsg.includes('not found') || errorMsg.includes('404');
       const isAuthError = errorMsg.includes('api key') || errorMsg.includes('401') || errorMsg.includes('403');
-      
+
       // Fatal errors
       if (isAuthError) {
         throw new Error("Invalid API Key. Please check your Vercel environment variables.");
       }
-      
+
       // Try next model on model-specific errors
       if (isModelError && modelIndex < MODEL_CASCADE.length - 1) {
         modelIndex++;
         console.log(`⚠️  Switching to: ${MODEL_CASCADE[modelIndex]}`);
         continue;
       }
-      
+
       // Retry with exponential backoff on rate limits
       if (isRateLimit && attempt < maxAttempts - 1) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
@@ -171,18 +171,18 @@ const smartGenerate = async <T>(
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
-      
+
       // Last attempt or unrecoverable error
       if (attempt === maxAttempts - 1) {
         throw new Error(
-          isRateLimit 
+          isRateLimit
             ? "API rate limit exceeded. Please try again in a few moments."
             : `Generation failed: ${error.message}`
         );
       }
     }
   }
-  
+
   throw new Error("Generation failed after all retries");
 };
 
@@ -192,7 +192,7 @@ const isShortOrUrl = (text: string) => text.trim().length < 300 || text.startsWi
 // YouTube video content synthesis
 export const synthesizeVideoContent = async (url: string): Promise<string> => {
   const cacheKey = getCacheKey('video', url);
-  
+
   return smartGenerate(async (model) => {
     const result = await model.generateContent({
       contents: [{
@@ -212,7 +212,7 @@ Output should be comprehensive (500+ words) and educational.`
         }]
       }]
     });
-    
+
     const text = result.response.text();
     if (!text || text.length < 100) {
       throw new Error("Could not generate video content. Please paste the transcript directly.");
@@ -224,15 +224,15 @@ Output should be comprehensive (500+ words) and educational.`
 // Generate summary
 export const generateSummary = async (text: string): Promise<string> => {
   if (!text) return "";
-  
+
   const cacheKey = getCacheKey('summary', text);
   const isTopic = isShortOrUrl(text);
-  
+
   return smartGenerate(async (model) => {
     const prompt = isTopic
       ? `Generate a comprehensive educational summary on the topic: "${text}". Provide detailed explanations suitable for studying.`
       : `Create a detailed study summary of the following content: ${text.substring(0, 50000)}`;
-    
+
     const result = await model.generateContent({
       contents: [{
         role: 'user',
@@ -253,7 +253,7 @@ NO markdown code blocks. Output pure HTML only.`
         }]
       }]
     });
-    
+
     return cleanHtml(result.response.text()) || "<h2>Error generating summary</h2>";
   }, cacheKey);
 };
@@ -262,12 +262,12 @@ NO markdown code blocks. Output pure HTML only.`
 export const generateFlashcards = async (text: string): Promise<Flashcard[]> => {
   const cacheKey = getCacheKey('flashcards', text);
   const isTopic = isShortOrUrl(text);
-  
+
   return smartGenerate(async (model) => {
     const prompt = isTopic
       ? `Topic: "${text}"`
       : `Text: ${text.substring(0, 50000)}`;
-    
+
     const result = await model.generateContent({
       contents: [{
         role: 'user',
@@ -287,15 +287,15 @@ Output ONLY the JSON array, no other text.`
         }]
       }]
     });
-    
+
     const json = parseAIResponse(result.response.text());
-    return Array.isArray(json) 
+    return Array.isArray(json)
       ? json.map((card: any, index: number) => ({
-          id: `fc-${Date.now()}-${index}`,
-          front: card.front || '',
-          back: card.back || '',
-          status: 'new' as const
-        }))
+        id: `fc-${Date.now()}-${index}`,
+        front: card.front || '',
+        back: card.back || '',
+        status: 'new' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -304,12 +304,12 @@ Output ONLY the JSON array, no other text.`
 export const generateQuiz = async (text: string, count: number = 5): Promise<QuizQuestion[]> => {
   const cacheKey = getCacheKey(`quiz_${count}`, text);
   const isTopic = isShortOrUrl(text);
-  
+
   return smartGenerate(async (model) => {
     const prompt = isTopic
       ? `Topic: "${text}"`
       : `Text: ${text.substring(0, 50000)}`;
-    
+
     const result = await model.generateContent({
       contents: [{
         role: 'user',
@@ -337,17 +337,17 @@ Output ONLY the JSON array.`
         }]
       }]
     });
-    
+
     const json = parseAIResponse(result.response.text());
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `qz-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `qz-${Date.now()}-${index}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -368,17 +368,17 @@ Output ONLY the JSON array.`
         }]
       }]
     });
-    
+
     const json = parseAIResponse(result.response.text());
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `qz-exam-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `qz-exam-${Date.now()}-${index}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   });
 };
@@ -386,7 +386,7 @@ Output ONLY the JSON array.`
 // SAT-specific functions
 export const generateSATLesson = async (skillContext: string): Promise<string> => {
   const cacheKey = getCacheKey('sat_lesson', skillContext);
-  
+
   return smartGenerate(async (model) => {
     const result = await model.generateContent({
       contents: [{
@@ -407,7 +407,7 @@ Output pure HTML only, no markdown.`
         }]
       }]
     });
-    
+
     return cleanHtml(result.response.text()) || "<h2>Error generating lesson</h2>";
   }, cacheKey);
 };
@@ -419,12 +419,12 @@ export const generateSATQuestions = async (
   difficulty?: 'easy' | 'hard' | 'adaptive'
 ): Promise<QuizQuestion[]> => {
   const cacheKey = getCacheKey(`sat_${type}_${count}`, context || 'gen');
-  
+
   return smartGenerate(async (model) => {
     const typeDesc = type === 'MATH' ? 'SAT Math' : 'SAT Reading & Writing';
     const diffDesc = difficulty || 'mixed difficulty';
     const contextDesc = context ? `Focus on: ${context}` : 'Cover diverse topics';
-    
+
     const result = await model.generateContent({
       contents: [{
         role: 'user',
@@ -453,18 +453,18 @@ Output ONLY the JSON array.`
         }]
       }]
     });
-    
+
     const json = parseAIResponse(result.response.text());
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `sat-${type}-${Date.now()}-${index}`,
-          passage: q.passage || '',
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `sat-${type}-${Date.now()}-${index}`,
+        passage: q.passage || '',
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -472,7 +472,7 @@ Output ONLY the JSON array.`
 // AP Course functions
 export const generateAPLesson = async (subject: string, unit: string, topic: string): Promise<string> => {
   const cacheKey = getCacheKey('ap_lesson', `${subject}_${unit}_${topic}`);
-  
+
   return smartGenerate(async (model) => {
     const result = await model.generateContent({
       contents: [{
@@ -496,7 +496,7 @@ Output pure HTML only.`
         }]
       }]
     });
-    
+
     return cleanHtml(result.response.text()) || "<h2>Error generating lesson</h2>";
   }, cacheKey);
 };
@@ -508,7 +508,7 @@ export const generateAPQuestions = async (
   difficulty: 'easy' | 'medium' | 'hard'
 ): Promise<QuizQuestion[]> => {
   const cacheKey = getCacheKey(`ap_${subject}_${unit}`, difficulty);
-  
+
   return smartGenerate(async (model) => {
     const result = await model.generateContent({
       contents: [{
@@ -523,17 +523,17 @@ Output ONLY the JSON array.`
         }]
       }]
     });
-    
+
     const json = parseAIResponse(result.response.text());
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `ap-${subject}-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `ap-${subject}-${Date.now()}-${index}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -547,15 +547,15 @@ export const chatWithResource = async (
   if (!chatSpamLimiter.check()) {
     throw new Error("Please wait a moment before sending another message.");
   }
-  
+
   const limits = getTierLimits();
   if (!dailyChatLimiter.check(limits.dailyChats)) {
     throw new Error(`Daily chat limit reached (${limits.dailyChats} messages). Please upgrade or wait 24h.`);
   }
-  
+
   const ai = initializeAI();
   const model = ai.getGenerativeModel({ model: MODEL_CASCADE[0] });
-  
+
   const chat = model.startChat({
     history: [
       {
@@ -572,7 +572,7 @@ export const chatWithResource = async (
       }))
     ]
   });
-  
+
   const result = await chat.sendMessageStream(query);
   return result.stream;
 };
@@ -580,7 +580,7 @@ export const chatWithResource = async (
 // Generate study plan
 export const generateStudyPlan = async (goal: string): Promise<string[]> => {
   const cacheKey = getCacheKey('plan', goal);
-  
+
   return smartGenerate(async (model) => {
     const result = await model.generateContent({
       contents: [{
@@ -594,13 +594,13 @@ Simple, clear language.`
         }]
       }]
     });
-    
+
     const text = result.response.text();
     return text
       .split('\n')
-      .filter(l => l.trim().length > 0)
-      .map(l => l.replace(/^[\d\-\.\*]+\s*/, '').trim())
-      .filter(l => l.length > 0)
+      .filter((l: string) => l.trim().length > 0)
+      .map((l: string) => l.replace(/^[\d\-\.\*]+\s*/, '').trim())
+      .filter((l: string) => l.length > 0)
       .slice(0, 5);
   }, cacheKey);
 };

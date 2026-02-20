@@ -6,9 +6,9 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Model selection - use free models that work reliably
 const MODELS = {
-  primary: "deepseek/deepseek-r1-0528",          // DeepSeek R1 (free)
+  primary: "aurora-alpha",                       // Aurora Alpha (fast, elite quality)
   fallback: "meta-llama/llama-3.3-70b-instruct", // Llama 3.3 70B (free backup)
-  test: "google/gemini-2.0-flash-exp:free"       // Gemini for testing (free, always works)
+  test: "google/gemini-2.0-flash-exp:free"       // Gemini for testing
 };
 
 // Start with primary, but allow override
@@ -16,9 +16,9 @@ let currentModel = MODELS.primary;
 
 // Get API key from environment
 const getApiKey = () => {
-  const key = import.meta.env.VITE_OPENROUTER_API_KEY || 
-              import.meta.env.VITE_API_KEY || 
-              import.meta.env.VITE_GEMINI_API_KEY; // Fallback to old var name
+  const key = import.meta.env.VITE_OPENROUTER_API_KEY ||
+    import.meta.env.VITE_API_KEY ||
+    import.meta.env.VITE_GEMINI_API_KEY; // Fallback to old var name
   return key || '';
 };
 
@@ -31,9 +31,10 @@ interface CacheEntry {
   timestamp: number;
 }
 
-const getCacheKey = (type: string, content: string) => {
+const getCacheKey = (type: string, content: string = "") => {
   let hash = 0;
-  const str = content.substring(0, 1000);
+  const safeContent = String(content || "");
+  const str = safeContent.substring(0, 1000);
   for (let i = 0; i < str.length; i++) {
     hash = ((hash << 5) - hash) + str.charCodeAt(i);
     hash |= 0;
@@ -96,14 +97,14 @@ const callDeepSeek = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`OpenRouter API Error with ${currentModel}:`, response.status, errorText);
-      
+
       // Try fallback model if primary fails
       if (attemptFallback && currentModel === MODELS.primary) {
         console.log("Primary model failed, trying fallback model...");
         currentModel = MODELS.fallback;
         return await callDeepSeek(messages, temperature, maxTokens, false); // Don't recurse fallback
       }
-      
+
       // Parse error for better user messages
       let userMessage = "AI generation failed. ";
       if (response.status === 401) {
@@ -117,21 +118,21 @@ const callDeepSeek = async (
       } else {
         userMessage = `API error (${response.status}). Please try again.`;
       }
-      
+
       throw new Error(userMessage);
     }
 
     const data = await response.json();
-    
+
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error("Unexpected API response:", data);
       throw new Error("AI response format error. Please try again.");
     }
-    
+
     const content = data.choices[0].message.content || "";
     console.log(`✓ Generated with ${currentModel}`);
     return content;
-    
+
   } catch (error: any) {
     // Network errors
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -151,16 +152,17 @@ const parseAIResponse = (text: string | undefined): any => {
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-    
+
     // Find JSON array or object
     const jsonMatch = cleanText.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
-    
+
     return JSON.parse(cleanText);
   } catch (e) {
-    console.error("JSON Parse Error:", e, "Text:", text?.substring(0, 200));
+    const errorPreview = text ? String(text).substring(0, 200) : "undefined";
+    console.error("JSON Parse Error:", e, "Text:", errorPreview);
     return [];
   }
 };
@@ -173,7 +175,7 @@ const cleanHtml = (text: string | undefined): string => {
     .replace(/```xml\n?/gi, '')
     .replace(/```\n?/g, '')
     .trim();
-  
+
   const firstTagIndex = cleaned.indexOf('<');
   if (firstTagIndex > 0) {
     cleaned = cleaned.substring(firstTagIndex);
@@ -201,29 +203,29 @@ const smartGenerate = async <T>(
         await new Promise(r => setTimeout(r, 1000));
       }
 
-      console.log(`🤖 Using DeepSeek R1 (attempt ${attempt + 1})`);
-      
+      console.log(`🤖 Using Aurora Alpha (attempt ${attempt + 1})`);
+
       const result = await generateFn();
-      
+
       // Cache successful result
       if (cacheKey && result) {
         setCachedResponse(cacheKey, result);
       }
-      
+
       return result;
-      
+
     } catch (error: any) {
       console.warn(`Attempt ${attempt + 1} failed:`, error.message);
-      
+
       const errorMsg = error.message?.toLowerCase() || '';
       const isRateLimit = errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('rate limit');
       const isAuthError = errorMsg.includes('api key') || errorMsg.includes('401') || errorMsg.includes('403');
-      
+
       // Fatal errors
       if (isAuthError) {
         throw new Error("Invalid API Key. Please check your OpenRouter API key.");
       }
-      
+
       // Retry with exponential backoff on rate limits
       if (isRateLimit && attempt < maxAttempts - 1) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
@@ -231,18 +233,18 @@ const smartGenerate = async <T>(
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
-      
+
       // Last attempt or unrecoverable error
       if (attempt === maxAttempts - 1) {
         throw new Error(
-          isRateLimit 
+          isRateLimit
             ? "API rate limit exceeded. Please try again in a few moments."
             : `Generation failed: ${error.message}`
         );
       }
     }
   }
-  
+
   throw new Error("Generation failed after all retries");
 };
 
@@ -251,59 +253,101 @@ const isShortOrUrl = (text: string) => text.trim().length < 300 || text.startsWi
 
 // YouTube video content synthesis
 export const synthesizeVideoContent = async (url: string): Promise<string> => {
-  const cacheKey = getCacheKey('video', url);
-  
-  return smartGenerate(async () => {
-    const prompt = `Analyze this YouTube video URL and provide comprehensive educational content: ${url}
-
-INSTRUCTIONS:
-1. Extract or infer the video topic from the URL
-2. Provide detailed, educational content on that topic
-3. Include key concepts, explanations, and important facts
-4. Format as clear, structured text suitable for study
-
-If you cannot access the video directly, provide expert-level educational content on the topic inferred from the URL.
-
-Output should be comprehensive (500+ words) and educational.`;
-
-    const response = await callDeepSeek([
-      { role: "user", content: prompt }
-    ]);
-    
-    if (!response || response.length < 100) {
-      throw new Error("Could not generate video content. Please paste the transcript directly.");
+  try {
+    const urlObj = new URL(url);
+    let videoId = urlObj.searchParams.get('v');
+    if (!videoId && urlObj.hostname === 'youtu.be') {
+      videoId = urlObj.pathname.slice(1);
     }
-    return response;
-  }, cacheKey);
+    if (!videoId || videoId.length < 10) throw new Error("Invalid YouTube URL");
+
+    const targetUrl = 'https://www.youtube.com/watch?v=' + videoId;
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
+
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error("Could not fetch YouTube page");
+    const data = await response.json();
+    const html = data.contents;
+
+    // Find the player response JSON
+    const regex = /"captions":({.*?})/;
+    const match = html.match(regex);
+    if (!match) throw new Error("No captions/transcripts found for this video");
+
+    const captionsData = JSON.parse(match[1]);
+    const captionTracks = captionsData?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (!captionTracks || captionTracks.length === 0) throw new Error("No captions available for this video");
+
+    const englishTrack = captionTracks.find((track: any) => track.languageCode === 'en' || (track.name?.simpleText || '').toLowerCase().includes('english')) || captionTracks[0];
+
+    // Fetch the transcript XML
+    const xmlResponse = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(englishTrack.baseUrl));
+    if (!xmlResponse.ok) throw new Error("Failed to fetch transcript XML");
+
+    const xmlData = await xmlResponse.json();
+    const xml = xmlData.contents;
+
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, "text/xml");
+    const textNodes = xmlDoc.getElementsByTagName("text");
+
+    let transcript = "";
+    for (let i = 0; i < textNodes.length; i++) {
+      const content = textNodes[i].textContent;
+      if (content) {
+        transcript += content.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"') + " ";
+      }
+    }
+
+    const cleanTranscript = transcript.trim().replace(/\\s+/g, ' ');
+    if (!cleanTranscript) {
+      throw new Error("Extracted transcript is empty.");
+    }
+    return cleanTranscript;
+  } catch (error: any) {
+    console.error("Transcript extraction error:", error);
+    throw new Error(`Failed to extract YouTube transcript: ${error.message}`);
+  }
 };
 
 // Generate summary
 export const generateSummary = async (text: string): Promise<string> => {
   if (!text) return "";
-  
+
   const cacheKey = getCacheKey('summary', text);
   const isTopic = isShortOrUrl(text);
-  
+
   return smartGenerate(async () => {
     const contentLength = text.length;
     const wordCount = text.split(/\s+/).length;
-    
+
     // Adaptive length based on source material depth
     let summaryGuidance = '';
-    if (contentLength < 1000) {
-      summaryGuidance = 'Brief summary (200-400 words): Focus on core concepts only.';
-    } else if (contentLength < 5000) {
-      summaryGuidance = 'Standard summary (400-800 words): Cover main ideas, key details, and significance.';
-    } else if (contentLength < 15000) {
-      summaryGuidance = 'Comprehensive summary (800-1500 words): Include detailed analysis, context, causes/effects, and historical significance.';
+    let termGuidance = '';
+    let maxTokens = 4000;
+
+    if (wordCount < 1000) {
+      summaryGuidance = 'Focused summary (300-600 words): Focus on core concepts only.';
+      termGuidance = 'Identify 10-15 core academic terms critical to understanding.';
+      maxTokens = 2500;
+    } else if (wordCount < 5000) {
+      summaryGuidance = 'Standard summary (800-1500 words): Cover main ideas, key details, and significance.';
+      termGuidance = 'Identify 20-30 advanced academic terms critical to understanding.';
+      maxTokens = 4500;
+    } else if (wordCount < 10000) {
+      summaryGuidance = 'Comprehensive summary (2000-4000 words): Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
+      termGuidance = 'Identify 30-50 advanced academic terms critical to understanding.';
+      maxTokens = 6000;
     } else {
-      summaryGuidance = 'Extensive summary (1500-2500 words): Provide in-depth coverage organized by generation/time period with full context, analysis, and implications.';
+      summaryGuidance = 'Extensive summary (3000-5000 words): Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
+      termGuidance = 'Identify 40-60 advanced academic terms critical to understanding.';
+      maxTokens = 8000;
     }
-    
+
     const contextPrompt = isTopic
       ? `Generate professional study materials on the topic: "${text}". Research and provide comprehensive academic content suitable for AP-level study.`
       : `Analyze and synthesize the following source material into elite-level study content:\n\n${text.substring(0, 50000)}`;
-    
+
     const prompt = `${contextPrompt}
 
 MISSION: Create structured study materials that meet College Board AP and SAT standards, comparable to premium educational platforms ($10M+ tier).
@@ -315,6 +359,7 @@ ORGANIZATION STRUCTURE:
 1. If material spans multiple time periods or generations, organize chronologically with clear period headers
 2. Use hierarchical HTML structure: <h2> for major periods/themes, <h3> for subtopics
 3. Present information in logical flow: context → main content → significance
+4. Specifically include cause-and-effect analysis and specific examples/evidence from the source
 
 WRITING STANDARDS:
 - Academic vocabulary at 8th-grade level (clear but rigorous—avoid oversimplification)
@@ -324,7 +369,7 @@ WRITING STANDARDS:
 - Emphasize WHY things matter, not just WHAT happened
 
 INTERACTIVE VOCABULARY:
-- Identify 20-35 advanced academic terms critical to understanding
+- ${termGuidance}
 - Wrap in: <span class="interactive-term" data-def="precise, clear definition">Term</span>
 - Definitions should be concise (10-15 words) and academically precise
 
@@ -365,8 +410,8 @@ Generate ONLY the HTML content. Begin immediately with <h2> tags.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.3, 6800); // Optimized: comprehensive quality with good speed balance
-    
+    ], 0.3, maxTokens); // Optimized dynamic tokens for fast response (<30s)
+
     return cleanHtml(response) || "<h2>Error generating summary</h2>";
   }, cacheKey);
 };
@@ -375,12 +420,12 @@ Generate ONLY the HTML content. Begin immediately with <h2> tags.`;
 export const generateFlashcards = async (text: string): Promise<Flashcard[]> => {
   const cacheKey = getCacheKey('flashcards', text);
   const isTopic = isShortOrUrl(text);
-  
+
   return smartGenerate(async () => {
     const contextPrompt = isTopic
       ? `Topic: "${text}"`
       : `Text: ${text.substring(0, 50000)}`;
-    
+
     const prompt = `Create 10-15 educational flashcards from this content.
 ${contextPrompt}
 
@@ -397,15 +442,15 @@ Output ONLY the JSON array, no other text.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.5, 2200); // High quality flashcards with excellent definitions
-    
+
     const json = parseAIResponse(response);
-    return Array.isArray(json) 
+    return Array.isArray(json)
       ? json.map((card: any, index: number) => ({
-          id: `fc-${Date.now()}-${index}`,
-          front: card.front || '',
-          back: card.back || '',
-          status: 'new' as const
-        }))
+        id: `fc-${Date.now()}-${index}`,
+        front: card.front || '',
+        back: card.back || '',
+        status: 'new' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -414,12 +459,12 @@ Output ONLY the JSON array, no other text.`;
 export const generateQuiz = async (text: string, count: number = 5): Promise<QuizQuestion[]> => {
   const cacheKey = getCacheKey(`quiz_${count}`, text);
   const isTopic = isShortOrUrl(text);
-  
+
   return smartGenerate(async () => {
     const contextPrompt = isTopic
       ? `Topic: "${text}"`
       : `Source Material: ${text.substring(0, 50000)}`;
-    
+
     const prompt = `${contextPrompt}
 
 MISSION: Generate ${count} AP and SAT-level multiple-choice questions that assess deep understanding, critical thinking, and analytical reasoning—NOT simple recall.
@@ -492,17 +537,17 @@ Output ONLY the JSON array. No preamble, no markdown, no explanation outside the
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.2, 5500); // Elite quality: detailed questions with sophisticated distractors
-    
+
     const json = parseAIResponse(response);
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `qz-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `qz-${Date.now()}-${index}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -520,17 +565,17 @@ Output ONLY the JSON array.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.3, 4500); // Elite quality for comprehensive exams
-    
+
     const json = parseAIResponse(response);
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `qz-exam-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `qz-exam-${Date.now()}-${index}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   });
 };
@@ -538,7 +583,7 @@ Output ONLY the JSON array.`;
 // SAT lesson generation
 export const generateSATLesson = async (skillContext: string): Promise<string> => {
   const cacheKey = getCacheKey('sat_lesson', skillContext);
-  
+
   return smartGenerate(async () => {
     const prompt = `Create a comprehensive SAT prep lesson on: ${skillContext}
 
@@ -556,7 +601,7 @@ Output pure HTML only, no markdown.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ]);
-    
+
     return cleanHtml(response) || "<h2>Error generating lesson</h2>";
   }, cacheKey);
 };
@@ -569,12 +614,12 @@ export const generateSATQuestions = async (
   difficulty?: 'easy' | 'hard' | 'adaptive'
 ): Promise<QuizQuestion[]> => {
   const cacheKey = getCacheKey(`sat_${type}_${count}`, context || 'gen');
-  
+
   return smartGenerate(async () => {
     const typeDesc = type === 'MATH' ? 'SAT Math' : 'SAT Reading and Writing';
     const diffDesc = difficulty || 'adaptive difficulty (mix of moderate and challenging)';
     const contextDesc = context ? `DOMAIN FOCUS: ${context}. ` : 'Cover diverse domains within the section. ';
-    
+
     const mathDomains = `
 MATH DOMAINS (distribute questions across):
 1. Algebra (linear equations, systems, inequalities, expressions)
@@ -590,8 +635,8 @@ READING & WRITING DOMAINS (distribute questions across):
 4. Expression of Ideas (transitions, concision, rhetorical synthesis)`;
 
     const domains = type === 'MATH' ? mathDomains : rwDomains;
-    
-    const passageRequirement = type === 'READING_WRITING' 
+
+    const passageRequirement = type === 'READING_WRITING'
       ? `
 PASSAGE REQUIREMENT FOR READING & WRITING:
 Each question MUST include a 40-120 word passage in the "passage" field.
@@ -600,7 +645,7 @@ Make passages authentic and substantive—not generic or artificially created.
 Questions should test comprehension, analysis, or conventions BASED on the passage.`
       : '';
 
-    const mathSpecifics = type === 'MATH' 
+    const mathSpecifics = type === 'MATH'
       ? `
 MATH QUESTION TYPES:
 - Word problems requiring multi-step reasoning
@@ -616,7 +661,7 @@ MATH ANSWER CHOICES:
 - No obvious patterns (like "all whole numbers" or "ascending order")`
       : '';
 
-    const rwSpecifics = type === 'READING_WRITING' 
+    const rwSpecifics = type === 'READING_WRITING'
       ? `
 READING & WRITING QUESTION TYPES:
 - "Which choice best states the main idea of the passage?"
@@ -631,7 +676,7 @@ READING & WRITING ANSWER CHOICES:
 - Make all transitions plausible for transition questions
 - Use parallel structure and similar length across choices`
       : '';
-    
+
     const prompt = `Generate ${count} official ${typeDesc} questions matching the digital SAT format (March 2024+).
 ${contextDesc}${domains}
 ${passageRequirement}
@@ -716,18 +761,18 @@ Output ONLY valid JSON. No markdown, no preamble, no explanation outside JSON.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.15, 6500); // Elite quality: College Board SAT standards with sophisticated distractors
-    
+
     const json = parseAIResponse(response);
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `sat-${type}-${Date.now()}-${index}`,
-          passage: q.passage || '',
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `sat-${type}-${Date.now()}-${index}`,
+        passage: q.passage || '',
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -735,7 +780,7 @@ Output ONLY valid JSON. No markdown, no preamble, no explanation outside JSON.`;
 // AP lesson generation
 export const generateAPLesson = async (subject: string, unit: string, topic: string): Promise<string> => {
   const cacheKey = getCacheKey('ap_lesson', `${subject}_${unit}_${topic}`);
-  
+
   return smartGenerate(async () => {
     const prompt = `Generate a comprehensive AP ${subject} lesson for ${unit}: ${topic}
 
@@ -807,7 +852,7 @@ OUTPUT: Pure HTML only, beginning with <h2>. No markdown, no preamble.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.25, 7000); // Elite quality: comprehensive AP college-level content
-    
+
     return cleanHtml(response) || "<h2>Error generating lesson</h2>";
   }, cacheKey);
 };
@@ -820,7 +865,7 @@ export const generateAPQuestions = async (
   difficulty: 'easy' | 'medium' | 'hard'
 ): Promise<QuizQuestion[]> => {
   const cacheKey = getCacheKey(`ap_${subject}_${unit}`, difficulty);
-  
+
   return smartGenerate(async () => {
     const difficultyGuidance = {
       easy: 'Foundation level: Test basic understanding of key concepts, definitions, and direct cause-effect relationships. 60-75% of students should answer correctly.',
@@ -924,17 +969,17 @@ Output ONLY valid JSON. No markdown, no preamble.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.2, 6500); // Elite quality: official AP exam-level questions
-    
+
     const json = parseAIResponse(response);
     return Array.isArray(json)
       ? json.map((q: any, index: number) => ({
-          id: `ap-${subject}-${Date.now()}-${index}`,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-          explanation: q.explanation || '',
-          type: 'multiple-choice' as const
-        }))
+        id: `ap-${subject}-${Date.now()}-${index}`,
+        question: q.question || '',
+        options: Array.isArray(q.options) ? q.options : [],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
+        type: 'multiple-choice' as const
+      }))
       : [];
   }, cacheKey);
 };
@@ -948,35 +993,32 @@ export const chatWithResource = async (
   if (!chatSpamLimiter.check()) {
     throw new Error("Please wait a moment before sending another message.");
   }
-  
+
   const limits = getTierLimits();
   if (!dailyChatLimiter.check(limits.dailyChats)) {
     throw new Error(`Daily chat limit reached (${limits.dailyChats} messages). Please upgrade or wait 24h.`);
   }
-  
+
   const isTopic = isShortOrUrl(context);
   const sysContext = isTopic ? `TOPIC CONTEXT: ${context}` : `SYSTEM CONTEXT: ${context.substring(0, 50000)}`;
-  
+
   const messages = [
     { role: "system", content: `${sysContext}\n\nINSTRUCTION: Answer strictly based on context. Be concise.` },
     ...history,
     { role: "user", content: query }
   ];
-  
+
   const response = await callDeepSeek(messages as any);
-  
-  // Return as async generator to maintain compatibility
-  return {
-    stream: (async function* () {
-      yield response;
-    })()
-  };
+
+  return (async function* () {
+    yield { text: () => response || "No response generated." };
+  })();
 };
 
 // Generate study plan
 export const generateStudyPlan = async (goal: string): Promise<string[]> => {
   const cacheKey = getCacheKey('plan', goal);
-  
+
   return smartGenerate(async () => {
     const prompt = `Create 5 actionable study steps for: "${goal}"
 
@@ -987,7 +1029,7 @@ Simple, clear language.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.5, 2000); // Quality weekly plans with detailed tasks
-    
+
     return response
       .split('\n')
       .filter(l => l.trim().length > 0)
@@ -1019,7 +1061,7 @@ export const generateWeeklyPlan = async (goals: string[]): Promise<Array<{
 }>> => {
   const combinedGoals = goals.join(', ');
   const cacheKey = getCacheKey('weekly_plan', combinedGoals);
-  
+
   return smartGenerate(async () => {
     const prompt = `Create a detailed weekly study plan for these goals: ${combinedGoals}
 
@@ -1042,16 +1084,16 @@ Output ONLY the JSON array.`;
     const response = await callDeepSeek([
       { role: "user", content: prompt }
     ], 0.7, 2000);
-    
+
     const json = parseAIResponse(response);
-    
+
     if (Array.isArray(json) && json.length > 0) {
       return json.map((day: any) => ({
         day: day.day || 'Unknown',
         tasks: Array.isArray(day.tasks) ? day.tasks : []
       }));
     }
-    
+
     // Fallback
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days.map(day => ({

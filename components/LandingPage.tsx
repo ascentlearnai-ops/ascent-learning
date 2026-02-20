@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Brain, ArrowRight, Check, X, Globe, Cpu, Lock, ChevronRight, Activity, Users, Database, Layers, Rocket, AlertTriangle, Terminal, Hourglass, Star, Play, Command, Github, Twitter } from 'lucide-react';
 import { Logo } from './Logo';
 import { lockSession, unlockSession } from '../utils/security';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '../lib/supabase';
 
 interface LandingPageProps {
   onLogin: (username: string) => void;
@@ -29,12 +32,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    
+
     const inputId = username.trim();
 
     if (!inputId) {
-        setLoginError('Identity required.');
-        return;
+      setLoginError('Identity required.');
+      return;
     }
 
     setIsAuthenticating(true);
@@ -44,8 +47,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         localStorage.setItem('ascent_user_tier', 'Scholar');
         handleSuccessfulLogin(inputId);
         return;
-      } 
-      
+      }
+
       const isValidKey = ACCESS_KEYS.includes(inputId.toUpperCase());
 
       if (isValidKey) {
@@ -56,7 +59,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         setShowLoginModal(false);
         setShowWaitlistModal(true);
       }
-      
+
     }, 1200);
   };
 
@@ -66,14 +69,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
     const today = new Date().toDateString();
 
     if (lastLogin !== today) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (lastLogin === yesterday.toDateString()) {
-            localStorage.setItem('ascent_streak', (currentStreak + 1).toString());
-        } else {
-            localStorage.setItem('ascent_streak', '1');
-        }
-        localStorage.setItem('ascent_last_login', today);
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (lastLogin === yesterday.toDateString()) {
+        localStorage.setItem('ascent_streak', (currentStreak + 1).toString());
+      } else {
+        localStorage.setItem('ascent_streak', '1');
+      }
+      localStorage.setItem('ascent_last_login', today);
     }
 
     lockSession(user);
@@ -87,28 +90,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-[#020202] text-white selection:bg-indigo-500/30 selection:text-white flex flex-col overflow-x-hidden font-sans relative">
-      
+
       {/* --- BACKGROUND (Electric Blue Gradient) --- */}
       <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-[#050505] to-[#000000]">
-         {/* Moving Grid - Brighter Mix */}
-         <div className="absolute inset-0 perspective-grid opacity-20 mix-blend-screen will-change-transform"></div>
-         
-         {/* Shooting Stars */}
-         <div className="absolute inset-0 overflow-hidden">
-            <div className="shooting-star" style={{ top: '10%', left: '20%', animationDelay: '0s' }}></div>
-            <div className="shooting-star" style={{ top: '30%', left: '60%', animationDelay: '2s' }}></div>
-            <div className="shooting-star" style={{ top: '70%', left: '10%', animationDelay: '4s' }}></div>
-            <div className="shooting-star" style={{ top: '50%', left: '80%', animationDelay: '1s' }}></div>
-         </div>
+        {/* Moving Grid - Brighter Mix */}
+        <div className="absolute inset-0 perspective-grid opacity-20 mix-blend-screen will-change-transform"></div>
 
-         {/* Ambient Glows - Reduced blur for performance */}
-         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/10 blur-[40px] rounded-full opacity-40"></div>
+        {/* Shooting Stars */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="shooting-star" style={{ top: '10%', left: '20%', animationDelay: '0s' }}></div>
+          <div className="shooting-star" style={{ top: '30%', left: '60%', animationDelay: '2s' }}></div>
+          <div className="shooting-star" style={{ top: '70%', left: '10%', animationDelay: '4s' }}></div>
+          <div className="shooting-star" style={{ top: '50%', left: '80%', animationDelay: '1s' }}></div>
+        </div>
+
+        {/* Ambient Glows - Reduced blur for performance */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/10 blur-[40px] rounded-full opacity-40"></div>
       </div>
 
       {/* Nav */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 border-b ${scrolled ? 'bg-[#020202]/90 border-white/5 py-4 backdrop-blur-md' : 'bg-transparent border-transparent py-6'}`}>
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="transition-transform duration-500 group-hover:rotate-180">
               <Logo size={32} />
             </div>
@@ -122,7 +125,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               <button onClick={() => scrollToSection('workflow')} className="hover:text-white transition-colors">Workflow</button>
               <button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Clearance</button>
             </div>
-            <button 
+            <button
               onClick={() => setShowLoginModal(true)}
               className="text-xs font-bold px-6 py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all shadow-[0_0_20px_rgba(255,255,255,0.05)] active:scale-95 flex items-center gap-2 group text-white font-mono"
             >
@@ -136,7 +139,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       {/* Hero Section */}
       <main className="flex-1 flex flex-col items-center justify-center pt-32 pb-20 px-6 relative z-10">
         <div className="max-w-7xl mx-auto text-center space-y-10 animate-enter">
-          
+
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold tracking-[0.2em] text-zinc-300 uppercase shadow-2xl animate-pulse-slow font-mono">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -144,20 +147,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             </span>
             Neural Network Online v2.5
           </div>
-          
+
           <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-[7rem] font-bold tracking-tighter leading-[0.95] md:leading-[0.9] text-white drop-shadow-2xl font-sans">
             Cognitive <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-white">
               Augmentation
             </span>
           </h1>
-          
+
           <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed font-light font-sans">
-            The high-performance knowledge engine for the elite scholar. <br className="hidden md:block"/>Transform chaos into structural mastery.
+            The high-performance knowledge engine for the elite scholar. <br className="hidden md:block" />Transform chaos into structural mastery.
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 pt-8">
-            <button 
+            <button
               onClick={() => setShowLoginModal(true)}
               className="px-10 py-5 rounded-full bg-white text-black font-bold text-sm tracking-wide transition-all hover:scale-105 active:scale-95 hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] flex items-center gap-2 font-mono w-full md:w-auto justify-center"
             >
@@ -172,38 +175,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         {/* Dashboard Hologram */}
         <div className="mt-32 w-full max-w-[1400px] mx-auto animate-enter stagger-2 relative perspective-1000">
           <div className="relative rounded-2xl bg-[#050505] p-2 shadow-2xl border border-white/10 transform rotate-x-12 hover:rotate-0 transition-transform duration-1000 ease-out origin-center group">
-             <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none rounded-xl z-20"></div>
-             <div className="aspect-[16/9] bg-[#030303] rounded-xl overflow-hidden relative border border-white/5">
-                <div className="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-[#080808]">
-                   <div className="flex gap-2">
-                     <div className="w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
-                     <div className="w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
-                     <div className="w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
-                   </div>
-                   <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Command Center // Active</div>
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none rounded-xl z-20"></div>
+            <div className="aspect-[16/9] bg-[#030303] rounded-xl overflow-hidden relative border border-white/5">
+              <div className="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-[#080808]">
+                <div className="flex gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
                 </div>
-                <div className="p-8 grid grid-cols-12 gap-6 h-full bg-noise">
-                   <div className="col-span-3 bg-zinc-900/20 rounded-xl border border-white/5 animate-pulse"></div>
-                   <div className="col-span-9 grid grid-rows-3 gap-6">
-                      <div className="row-span-1 grid grid-cols-3 gap-6">
-                         <div className="bg-indigo-500/10 rounded-xl border border-indigo-500/20"></div>
-                         <div className="bg-zinc-900/20 rounded-xl border border-white/5"></div>
-                         <div className="bg-zinc-900/20 rounded-xl border border-white/5"></div>
-                      </div>
-                      <div className="row-span-2 bg-zinc-900/10 rounded-xl border border-white/5 relative overflow-hidden flex items-center justify-center">
-                         <Cpu size={64} className="text-zinc-800" />
-                      </div>
-                   </div>
+                <div className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Command Center // Active</div>
+              </div>
+              <div className="p-8 grid grid-cols-12 gap-6 h-full bg-noise">
+                <div className="col-span-3 bg-zinc-900/20 rounded-xl border border-white/5 animate-pulse"></div>
+                <div className="col-span-9 grid grid-rows-3 gap-6">
+                  <div className="row-span-1 grid grid-cols-3 gap-6">
+                    <div className="bg-indigo-500/10 rounded-xl border border-indigo-500/20"></div>
+                    <div className="bg-zinc-900/20 rounded-xl border border-white/5"></div>
+                    <div className="bg-zinc-900/20 rounded-xl border border-white/5"></div>
+                  </div>
+                  <div className="row-span-2 bg-zinc-900/10 rounded-xl border border-white/5 relative overflow-hidden flex items-center justify-center">
+                    <Cpu size={64} className="text-zinc-800" />
+                  </div>
                 </div>
-                
-                <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20 group-hover:opacity-0 transition-opacity duration-700">
-                   <div className="p-8 bg-[#050505] border border-white/10 rounded-2xl text-center shadow-[0_0_50px_rgba(255,255,255,0.1)]">
-                      <Lock size={32} className="mx-auto text-zinc-500 mb-4" />
-                      <h3 className="text-xl font-bold text-white">System Locked</h3>
-                      <p className="text-zinc-500 text-xs mt-2 uppercase tracking-widest">Authorization Required</p>
-                   </div>
+              </div>
+
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20 group-hover:opacity-0 transition-opacity duration-700">
+                <div className="p-8 bg-[#050505] border border-white/10 rounded-2xl text-center shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                  <Lock size={32} className="mx-auto text-zinc-500 mb-4" />
+                  <h3 className="text-xl font-bold text-white">System Locked</h3>
+                  <p className="text-zinc-500 text-xs mt-2 uppercase tracking-widest">Authorization Required</p>
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
           <div className="absolute -bottom-20 left-0 right-0 h-24 bg-gradient-to-b from-blue-500/10 to-transparent blur-3xl opacity-40"></div>
         </div>
@@ -212,195 +215,195 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       {/* Features Bento Grid */}
       <section id="features" className="py-20 bg-transparent relative border-t border-white/5">
         <div className="max-w-[1600px] mx-auto px-6 md:px-12">
-           <div className="mb-12 md:flex justify-between items-end">
-              <div>
-                 <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight font-sans">Capabilities</h2>
-                 <p className="text-zinc-400 max-w-md text-lg leading-relaxed font-sans">
-                    A suite of military-grade cognitive tools designed for high-velocity learning.
-                 </p>
-              </div>
-              <div className="hidden md:block">
-                 <Globe size={40} className="text-zinc-800" strokeWidth={1} />
-              </div>
-           </div>
+          <div className="mb-12 md:flex justify-between items-end">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight font-sans">Capabilities</h2>
+              <p className="text-zinc-400 max-w-md text-lg leading-relaxed font-sans">
+                A suite of military-grade cognitive tools designed for high-velocity learning.
+              </p>
+            </div>
+            <div className="hidden md:block">
+              <Globe size={40} className="text-zinc-800" strokeWidth={1} />
+            </div>
+          </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Cards */}
-              <div className="md:col-span-2 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-500">
-                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-blue-600/20 transition-colors"></div>
-                 <div className="relative z-10">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Brain /></div>
-                    <h3 className="text-2xl font-bold text-white mb-3 font-sans">Neural Synthesis Engine</h3>
-                    <p className="text-zinc-400 leading-relaxed max-w-lg font-sans">
-                       Our proprietary AI architect restructures chaotic information streams into high-fidelity summaries, extracting key relationships and hidden patterns instantly.
-                    </p>
-                 </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Cards */}
+            <div className="md:col-span-2 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden group hover:border-blue-500/30 transition-all duration-500">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[80px] rounded-full pointer-events-none group-hover:bg-blue-600/20 transition-colors"></div>
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Brain /></div>
+                <h3 className="text-2xl font-bold text-white mb-3 font-sans">Neural Synthesis Engine</h3>
+                <p className="text-zinc-400 leading-relaxed max-w-lg font-sans">
+                  Our proprietary AI architect restructures chaotic information streams into high-fidelity summaries, extracting key relationships and hidden patterns instantly.
+                </p>
               </div>
+            </div>
 
-              <div className="md:row-span-2 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-500">
-                 <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-purple-900/10 to-transparent pointer-events-none"></div>
-                 <div className="relative z-10 h-full flex flex-col">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Database /></div>
-                    <h3 className="text-2xl font-bold text-white mb-3 font-sans">Knowledge Vault</h3>
-                    <p className="text-zinc-400 leading-relaxed mb-8 flex-1 font-sans">
-                       Securely store and organize unlimited course materials with encrypted access protocols. Your data is sovereign.
-                    </p>
-                    <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-xs font-mono text-zinc-500">
-                       {'>'} ENCRYPTION: AES-256<br/>
-                       {'>'} STORAGE: DISTRIBUTED<br/>
-                       {'>'} ACCESS: BIOMETRIC
-                    </div>
-                 </div>
+            <div className="md:row-span-2 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-500">
+              <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-purple-900/10 to-transparent pointer-events-none"></div>
+              <div className="relative z-10 h-full flex flex-col">
+                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Database /></div>
+                <h3 className="text-2xl font-bold text-white mb-3 font-sans">Knowledge Vault</h3>
+                <p className="text-zinc-400 leading-relaxed mb-8 flex-1 font-sans">
+                  Securely store and organize unlimited course materials with encrypted access protocols. Your data is sovereign.
+                </p>
+                <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-xs font-mono text-zinc-500">
+                  {'>'} ENCRYPTION: AES-256<br />
+                  {'>'} STORAGE: DISTRIBUTED<br />
+                  {'>'} ACCESS: BIOMETRIC
+                </div>
               </div>
+            </div>
 
-              <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 group hover:border-white/20 transition-all duration-500">
-                 <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Zap /></div>
-                 <h3 className="text-xl font-bold text-white mb-3 font-sans">Active Recall</h3>
-                 <p className="text-zinc-400 text-sm leading-relaxed font-sans">
-                    Automated flashcard generation and adaptive quizzing reinforce neural pathways.
-                 </p>
-              </div>
+            <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 group hover:border-white/20 transition-all duration-500">
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Zap /></div>
+              <h3 className="text-xl font-bold text-white mb-3 font-sans">Active Recall</h3>
+              <p className="text-zinc-400 text-sm leading-relaxed font-sans">
+                Automated flashcard generation and adaptive quizzing reinforce neural pathways.
+              </p>
+            </div>
 
-              <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 group hover:border-white/20 transition-all duration-500">
-                 <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Activity /></div>
-                 <h3 className="text-xl font-bold text-white mb-3 font-sans">Focus Telemetry</h3>
-                 <p className="text-zinc-400 text-sm leading-relaxed font-sans">
-                    Track learning velocity and retention rates with precision analytics dashboards.
-                 </p>
-              </div>
-           </div>
+            <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-10 group hover:border-white/20 transition-all duration-500">
+              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6 text-white border border-white/10"><Activity /></div>
+              <h3 className="text-xl font-bold text-white mb-3 font-sans">Focus Telemetry</h3>
+              <p className="text-zinc-400 text-sm leading-relaxed font-sans">
+                Track learning velocity and retention rates with precision analytics dashboards.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Pricing - REDESIGNED: GLOSSY, MONO FONTS, SEAMLESS */}
       <section id="pricing" className="py-40 relative">
-         {/* Seamless Background Gradient */}
-         <div className="absolute inset-0 bg-gradient-to-b from-[#020202] via-[#050505] to-black"></div>
-         
-         {/* Decorative Ambience */}
-         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none"></div>
-         
-         <div className="max-w-[1600px] mx-auto px-6 md:px-12 relative z-10">
-            <div className="text-center mb-24">
-               <div className="inline-block mb-6 px-4 py-2 rounded-full border border-white/5 bg-white/5 backdrop-blur-md shadow-2xl">
-                  <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                     <Lock size={10} className="text-blue-500" />
-                     Security Clearance Required
-                  </span>
-               </div>
-               <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tighter font-sans">
-                  Access Protocol
-               </h2>
-               <p className="text-zinc-400 max-w-xl mx-auto text-lg leading-relaxed font-light">
-                  Authenticate your clearance level to unlock advanced neural synthesis capabilities.
-               </p>
-            </div>
+        {/* Seamless Background Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#020202] via-[#050505] to-black"></div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
-               <PricingCard 
-                 tier="INITIATE" 
-                 price="0" 
-                 desc="Standard access for the casual observer."
-                 features={['Daily Query Limit: 50', 'Standard Response Time', 'Basic Neural Synthesis', 'Public Knowledge Base']}
-                 highlight={false}
-                 onSelect={() => setShowLoginModal(true)}
-               />
-               <PricingCard 
-                 tier="SCHOLAR" 
-                 price="9.99" 
-                 desc="Unrestricted access for the elite mind."
-                 features={['Unlimited Queries', 'Zero-Latency Processing', 'Deep Research Agent', 'Exam Simulation Mode', 'Priority Support Channel']}
-                 highlight={true}
-                 onSelect={() => setShowLoginModal(true)}
-               />
+        {/* Decorative Ambience */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+        <div className="max-w-[1600px] mx-auto px-6 md:px-12 relative z-10">
+          <div className="text-center mb-24">
+            <div className="inline-block mb-6 px-4 py-2 rounded-full border border-white/5 bg-white/5 backdrop-blur-md shadow-2xl">
+              <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Lock size={10} className="text-blue-500" />
+                Security Clearance Required
+              </span>
             </div>
-         </div>
+            <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tighter font-sans">
+              Access Protocol
+            </h2>
+            <p className="text-zinc-400 max-w-xl mx-auto text-lg leading-relaxed font-light">
+              Authenticate your clearance level to unlock advanced neural synthesis capabilities.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
+            <PricingCard
+              tier="INITIATE"
+              price="0"
+              desc="Standard access for the casual observer."
+              features={['Daily Query Limit: 50', 'Standard Response Time', 'Basic Neural Synthesis', 'Public Knowledge Base']}
+              highlight={false}
+              onSelect={() => setShowLoginModal(true)}
+            />
+            <PricingCard
+              tier="SCHOLAR"
+              price="9.99"
+              desc="Unrestricted access for the elite mind."
+              features={['Unlimited Queries', 'Zero-Latency Processing', 'Deep Research Agent', 'Exam Simulation Mode', 'Priority Support Channel']}
+              highlight={true}
+              onSelect={() => setShowLoginModal(true)}
+            />
+          </div>
+        </div>
       </section>
 
       {/* Footer - REDESIGNED: Full Width & Spread Out */}
       <footer className="relative bg-black pt-32 pb-16 overflow-hidden border-t border-white/5">
-         {/* Top Gradient Fade (Seamless Integration) */}
-         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-900/5 via-black to-black pointer-events-none"></div>
-         
-         <div className="w-full px-6 md:px-12 lg:px-24 relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 mb-24">
-                {/* Brand Section - Spans 4 columns on large screens */}
-                <div className="col-span-1 md:col-span-5 lg:col-span-4 space-y-8">
-                    <div className="flex items-center gap-3">
-                        <Logo size={48} />
-                        <span className="font-bold text-3xl tracking-tight text-white font-sans">ASCENT</span>
-                    </div>
-                    <p className="text-zinc-400 text-base max-w-md leading-relaxed font-sans font-light">
-                        The next evolution in cognitive augmentation. 
-                        Ascent integrates neural synthesis with active recall protocols to accelerate human learning velocity.
-                    </p>
-                    <div className="flex gap-4 pt-4">
-                        <SocialButton icon={<Twitter size={20} />} />
-                        <SocialButton icon={<Github size={20} />} />
-                        <SocialButton icon={<Command size={20} />} />
-                    </div>
-                </div>
-                
-                {/* Spacer - Flexible based on screen size */}
-                <div className="hidden lg:block lg:col-span-2"></div>
-                <div className="hidden md:block lg:hidden md:col-span-1"></div>
+        {/* Top Gradient Fade (Seamless Integration) */}
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent opacity-50"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-900/5 via-black to-black pointer-events-none"></div>
 
-                {/* Links - Platform */}
-                <div className="col-span-1 md:col-span-2 space-y-8">
-                    <h4 className="font-mono text-xs font-bold text-white uppercase tracking-[0.2em] mb-6">Platform</h4>
-                    <ul className="space-y-4 text-sm text-zinc-500 font-sans">
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Neural Engine</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Knowledge Graph</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Pricing Protocol</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">API Access</a></li>
-                    </ul>
-                </div>
-
-                {/* Links - Company */}
-                <div className="col-span-1 md:col-span-2 space-y-8">
-                    <h4 className="font-mono text-xs font-bold text-white uppercase tracking-[0.2em] mb-6">Company</h4>
-                    <ul className="space-y-4 text-sm text-zinc-500 font-sans">
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Mission</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Research</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Careers</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Contact</a></li>
-                    </ul>
-                </div>
-
-                {/* Links - Legal */}
-                <div className="col-span-1 md:col-span-2 space-y-8">
-                    <h4 className="font-mono text-xs font-bold text-white uppercase tracking-[0.2em] mb-6">Legal</h4>
-                    <ul className="space-y-4 text-sm text-zinc-500 font-sans">
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Terms of Service</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Privacy Policy</a></li>
-                        <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Security Audit</a></li>
-                    </ul>
-                </div>
+        <div className="w-full px-6 md:px-12 lg:px-24 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 mb-24">
+            {/* Brand Section - Spans 4 columns on large screens */}
+            <div className="col-span-1 md:col-span-5 lg:col-span-4 space-y-8">
+              <div className="flex items-center gap-3">
+                <Logo size={48} />
+                <span className="font-bold text-3xl tracking-tight text-white font-sans">ASCENT</span>
+              </div>
+              <p className="text-zinc-400 text-base max-w-md leading-relaxed font-sans font-light">
+                The next evolution in cognitive augmentation.
+                Ascent integrates neural synthesis with active recall protocols to accelerate human learning velocity.
+              </p>
+              <div className="flex gap-4 pt-4">
+                <SocialButton icon={<Twitter size={20} />} />
+                <SocialButton icon={<Github size={20} />} />
+                <SocialButton icon={<Command size={20} />} />
+              </div>
             </div>
 
-            {/* Bottom Bar */}
-            <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-               <div className="flex flex-col gap-2">
-                   <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
-                       © 2025 ASCENT LEARNING SYSTEMS.
-                   </span>
-                   <span className="text-[10px] text-zinc-700 font-mono">
-                       DESIGNED FOR HIGH-PERFORMANCE COGNITION.
-                   </span>
-               </div>
-               
-               <div className="flex items-center gap-6">
-                   <div className="text-right">
-                       <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">System Status</div>
-                       <div className="flex items-center justify-end gap-2">
-                           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                           <span className="text-xs font-bold text-white">OPERATIONAL</span>
-                       </div>
-                   </div>
-               </div>
+            {/* Spacer - Flexible based on screen size */}
+            <div className="hidden lg:block lg:col-span-2"></div>
+            <div className="hidden md:block lg:hidden md:col-span-1"></div>
+
+            {/* Links - Platform */}
+            <div className="col-span-1 md:col-span-2 space-y-8">
+              <h4 className="font-mono text-xs font-bold text-white uppercase tracking-[0.2em] mb-6">Platform</h4>
+              <ul className="space-y-4 text-sm text-zinc-500 font-sans">
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Neural Engine</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Knowledge Graph</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Pricing Protocol</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">API Access</a></li>
+              </ul>
             </div>
-         </div>
+
+            {/* Links - Company */}
+            <div className="col-span-1 md:col-span-2 space-y-8">
+              <h4 className="font-mono text-xs font-bold text-white uppercase tracking-[0.2em] mb-6">Company</h4>
+              <ul className="space-y-4 text-sm text-zinc-500 font-sans">
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Mission</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Research</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Careers</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Contact</a></li>
+              </ul>
+            </div>
+
+            {/* Links - Legal */}
+            <div className="col-span-1 md:col-span-2 space-y-8">
+              <h4 className="font-mono text-xs font-bold text-white uppercase tracking-[0.2em] mb-6">Legal</h4>
+              <ul className="space-y-4 text-sm text-zinc-500 font-sans">
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-blue-400 transition-colors duration-300">Security Audit</a></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                © 2025 ASCENT LEARNING SYSTEMS.
+              </span>
+              <span className="text-[10px] text-zinc-700 font-mono">
+                DESIGNED FOR HIGH-PERFORMANCE COGNITION.
+              </span>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">System Status</div>
+                <div className="flex items-center justify-end gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  <span className="text-xs font-bold text-white">OPERATIONAL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </footer>
 
       {/* Login Modal */}
@@ -408,59 +411,41 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 animate-enter duration-200 backdrop-blur-sm">
           <div className="w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-[32px] p-10 relative shadow-2xl overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500"></div>
-            
+
             <button onClick={() => setShowLoginModal(false)} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors">
               <X size={20} />
             </button>
-            
+
             <div className="text-center mb-10">
               <Logo size={56} className="mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-white mb-2 font-sans">Secure Handshake</h3>
               <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">System Capacity: 50/50 Pilots</p>
             </div>
 
-            <form onSubmit={handleLoginSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 font-mono">Access Key</label>
-                <input 
-                  type="text" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-black/50 border border-zinc-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-zinc-800 font-mono text-sm tracking-wider"
-                  placeholder="PILOT-XX"
-                  autoFocus
-                />
+            {supabase ? (
+              <Auth
+                supabaseClient={supabase}
+                appearance={{
+                  theme: ThemeSupa,
+                  variables: {
+                    default: {
+                      colors: {
+                        brand: '#3b82f6',
+                        brandAccent: '#2563eb',
+                      }
+                    }
+                  }
+                }}
+                theme="dark"
+                providers={['google']}
+                magicLink={true}
+                onlyThirdPartyProviders={false}
+              />
+            ) : (
+              <div className="p-4 bg-red-900/10 border border-red-900/20 rounded-xl text-red-400 text-xs text-center font-bold flex items-center justify-center gap-2 font-mono">
+                <AlertTriangle size={14} /> Database connection not established.
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 font-mono">Passkey</label>
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/50 border border-zinc-800 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-zinc-800 font-mono text-sm tracking-wider"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              {loginError && (
-                 <div className="p-4 bg-red-900/10 border border-red-900/20 rounded-xl text-red-400 text-xs text-center font-bold flex items-center justify-center gap-2 font-mono">
-                   <AlertTriangle size={14} /> {loginError}
-                 </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={isAuthenticating}
-                className="w-full py-4 bg-white text-black hover:bg-zinc-200 font-bold rounded-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-lg font-mono tracking-wide uppercase text-xs"
-              >
-                {isAuthenticating ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-3 h-3 border-2 border-zinc-400 border-t-black rounded-full animate-spin"></span>
-                    Authenticating...
-                  </span>
-                ) : 'Verify Identity'}
-              </button>
-            </form>
+            )}
           </div>
         </div>
       )}
@@ -468,33 +453,33 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       {/* Waitlist Modal */}
       {showWaitlistModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95 p-4 animate-enter duration-300">
-           <div className="w-full max-w-md bg-[#0A0A0A] border border-red-900/30 rounded-[32px] p-10 relative shadow-2xl overflow-hidden text-center">
-              <div className="w-20 h-20 rounded-full bg-red-900/10 border border-red-500/20 flex items-center justify-center mx-auto mb-8">
-                 <Hourglass size={32} className="text-red-500" />
-              </div>
-              
-              <h2 className="text-3xl font-bold text-white mb-3 font-sans">Access Denied</h2>
-              <div className="inline-block px-3 py-1 bg-red-900/10 border border-red-900/30 rounded-full text-red-400 text-[10px] font-bold uppercase tracking-widest mb-8 font-mono">
-                Capacity Reached
-              </div>
-              
-              <p className="text-zinc-400 text-sm leading-relaxed mb-8">
-                The Ascent Protocol is currently operating at max pilot capacity. 
-                Your Neural ID has been placed in the priority queue.
-              </p>
+          <div className="w-full max-w-md bg-[#0A0A0A] border border-red-900/30 rounded-[32px] p-10 relative shadow-2xl overflow-hidden text-center">
+            <div className="w-20 h-20 rounded-full bg-red-900/10 border border-red-500/20 flex items-center justify-center mx-auto mb-8">
+              <Hourglass size={32} className="text-red-500" />
+            </div>
 
-              <div className="bg-black/40 rounded-xl p-6 mb-8 border border-white/5">
-                 <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest mb-2">Current Queue Position</div>
-                 <div className="text-3xl font-mono text-white">#2,401</div>
-              </div>
+            <h2 className="text-3xl font-bold text-white mb-3 font-sans">Access Denied</h2>
+            <div className="inline-block px-3 py-1 bg-red-900/10 border border-red-900/30 rounded-full text-red-400 text-[10px] font-bold uppercase tracking-widest mb-8 font-mono">
+              Capacity Reached
+            </div>
 
-              <button 
-                 onClick={() => { setShowWaitlistModal(false); setShowLoginModal(true); }}
-                 className="w-full py-4 rounded-xl border border-white/10 hover:bg-white/5 text-white font-bold text-sm transition-all font-mono uppercase tracking-wide"
-               >
-                 Retry Credentials
-               </button>
-           </div>
+            <p className="text-zinc-400 text-sm leading-relaxed mb-8">
+              The Ascent Protocol is currently operating at max pilot capacity.
+              Your Neural ID has been placed in the priority queue.
+            </p>
+
+            <div className="bg-black/40 rounded-xl p-6 mb-8 border border-white/5">
+              <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest mb-2">Current Queue Position</div>
+              <div className="text-3xl font-mono text-white">#2,401</div>
+            </div>
+
+            <button
+              onClick={() => { setShowWaitlistModal(false); setShowLoginModal(true); }}
+              className="w-full py-4 rounded-xl border border-white/10 hover:bg-white/5 text-white font-bold text-sm transition-all font-mono uppercase tracking-wide"
+            >
+              Retry Credentials
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -503,15 +488,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
 const WorkflowStep = ({ number, title, desc, icon }: any) => (
   <div className="relative z-10 flex flex-col items-center text-center group">
-     <div className="w-24 h-24 rounded-full bg-[#0A0A0A] border border-white/10 flex items-center justify-center mb-6 group-hover:border-blue-500/50 transition-colors duration-500 shadow-2xl relative">
-        <div className="absolute inset-0 bg-blue-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div className="text-zinc-400 group-hover:text-blue-400 transition-colors">{icon}</div>
-        <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center text-xs border-2 border-[#0A0A0A] font-mono">
-           {number}
-        </div>
-     </div>
-     <h3 className="text-xl font-bold text-white mb-2 font-sans">{title}</h3>
-     <p className="text-sm text-zinc-500 max-w-xs leading-relaxed font-sans">{desc}</p>
+    <div className="w-24 h-24 rounded-full bg-[#0A0A0A] border border-white/10 flex items-center justify-center mb-6 group-hover:border-blue-500/50 transition-colors duration-500 shadow-2xl relative">
+      <div className="absolute inset-0 bg-blue-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div className="text-zinc-400 group-hover:text-blue-400 transition-colors">{icon}</div>
+      <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center text-xs border-2 border-[#0A0A0A] font-mono">
+        {number}
+      </div>
+    </div>
+    <h3 className="text-xl font-bold text-white mb-2 font-sans">{title}</h3>
+    <p className="text-sm text-zinc-500 max-w-xs leading-relaxed font-sans">{desc}</p>
   </div>
 );
 
@@ -520,79 +505,77 @@ const PricingCard = ({ tier, price, desc, features, highlight, onSelect }: any) 
   <div className={`relative p-1 rounded-[32px] transition-all duration-500 group hover:-translate-y-2 ${highlight ? 'bg-gradient-to-b from-blue-600/30 via-purple-600/30 to-blue-600/10' : 'bg-white/5'}`}>
     {/* Glow Effect on Hover */}
     <div className="absolute inset-0 bg-white/10 blur-xl rounded-[32px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-    
+
     <div className="h-full bg-black/60 backdrop-blur-2xl rounded-[30px] p-10 flex flex-col relative overflow-hidden border border-white/5">
-        {/* Subtle noise texture */}
-        <div className="absolute inset-0 bg-noise opacity-20 pointer-events-none"></div>
-        {highlight && <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none"></div>}
-        
-        <div className="relative z-10 flex flex-col h-full">
-            <div className="flex justify-between items-start mb-8">
-                <div>
-                    <div className="flex items-center gap-2 mb-3">
-                        {highlight && <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>}
-                        <h3 className={`text-xs font-mono font-bold uppercase tracking-[0.2em] ${highlight ? 'text-blue-400' : 'text-zinc-500'}`}>
-                            {tier}
-                        </h3>
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                        <span className="text-6xl font-sans font-bold text-white tracking-tighter">${price}</span>
-                        {price !== '0' && <span className="text-zinc-500 font-mono text-xs">/MO</span>}
-                    </div>
-                </div>
-                {highlight ? (
-                    <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
-                        <Shield size={24} />
-                    </div>
-                ) : (
-                    <div className="p-3 bg-white/5 rounded-2xl text-zinc-600 border border-white/5">
-                        <Shield size={24} />
-                    </div>
-                )}
+      {/* Subtle noise texture */}
+      <div className="absolute inset-0 bg-noise opacity-20 pointer-events-none"></div>
+      {highlight && <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 blur-[80px] rounded-full pointer-events-none"></div>}
+
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              {highlight && <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>}
+              <h3 className={`text-xs font-mono font-bold uppercase tracking-[0.2em] ${highlight ? 'text-blue-400' : 'text-zinc-500'}`}>
+                {tier}
+              </h3>
             </div>
-
-            <p className="text-zinc-300 font-light text-lg mb-10 pb-10 border-b border-white/5 font-sans leading-relaxed">
-                {desc}
-            </p>
-
-            <div className="flex-1 space-y-6 mb-12">
-                {features.map((f: string, i: number) => (
-                    <div key={i} className="flex items-center gap-4 group/item">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${
-                            highlight 
-                            ? 'border-blue-500/30 bg-blue-500/10 text-blue-400' 
-                            : 'border-zinc-800 bg-zinc-900 text-zinc-600'
-                        }`}>
-                            <Check size={10} strokeWidth={3} />
-                        </div>
-                        <span className={`text-sm font-medium transition-colors font-sans ${highlight ? 'text-zinc-300 group-hover/item:text-white' : 'text-zinc-500 group-hover/item:text-zinc-300'}`}>
-                            {f}
-                        </span>
-                    </div>
-                ))}
+            <div className="flex items-baseline gap-1">
+              <span className="text-6xl font-sans font-bold text-white tracking-tighter">${price}</span>
+              {price !== '0' && <span className="text-zinc-500 font-mono text-xs">/MO</span>}
             </div>
-
-            <button 
-                onClick={onSelect}
-                className={`w-full py-5 rounded-2xl font-bold text-xs tracking-[0.2em] uppercase transition-all duration-300 relative overflow-hidden group/btn font-mono ${
-                    highlight 
-                    ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.1)]' 
-                    : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
-                }`}
-            >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                    Initialize Protocol <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-                </span>
-            </button>
+          </div>
+          {highlight ? (
+            <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+              <Shield size={24} />
+            </div>
+          ) : (
+            <div className="p-3 bg-white/5 rounded-2xl text-zinc-600 border border-white/5">
+              <Shield size={24} />
+            </div>
+          )}
         </div>
+
+        <p className="text-zinc-300 font-light text-lg mb-10 pb-10 border-b border-white/5 font-sans leading-relaxed">
+          {desc}
+        </p>
+
+        <div className="flex-1 space-y-6 mb-12">
+          {features.map((f: string, i: number) => (
+            <div key={i} className="flex items-center gap-4 group/item">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${highlight
+                  ? 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                  : 'border-zinc-800 bg-zinc-900 text-zinc-600'
+                }`}>
+                <Check size={10} strokeWidth={3} />
+              </div>
+              <span className={`text-sm font-medium transition-colors font-sans ${highlight ? 'text-zinc-300 group-hover/item:text-white' : 'text-zinc-500 group-hover/item:text-zinc-300'}`}>
+                {f}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={onSelect}
+          className={`w-full py-5 rounded-2xl font-bold text-xs tracking-[0.2em] uppercase transition-all duration-300 relative overflow-hidden group/btn font-mono ${highlight
+              ? 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_30px_rgba(255,255,255,0.1)]'
+              : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
+            }`}
+        >
+          <span className="relative z-10 flex items-center justify-center gap-2">
+            Initialize Protocol <ChevronRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+          </span>
+        </button>
+      </div>
     </div>
   </div>
 );
 
 const SocialButton = ({ icon }: any) => (
-    <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/20">
-        {icon}
-    </button>
+  <button className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all border border-white/5 hover:border-white/20">
+    {icon}
+  </button>
 );
 
 export default LandingPage;
