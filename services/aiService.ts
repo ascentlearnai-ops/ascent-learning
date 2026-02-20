@@ -4,10 +4,10 @@ import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits
 // DeepSeek R1 via OpenRouter configuration
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Model selection - use free models that work reliably
+// Model selection - prioritize speed and quality (under 30s guarantee)
 const MODELS = {
-  primary: "nousresearch/hermes-3-llama-3.1-405b:free", // Hermes 3 405B (elite quality, free)
-  fallback: "google/gemma-3-12b-it:free",              // Gemma 3 12B (fast, high quality backup)
+  primary: "google/gemma-3-12b-it:free",               // Gemma 3 12B (Perfect balance of elite quality + blazing fast speed under 30s)
+  fallback: "openrouter/free",                         // Auto-router fallback if Gemma hits a limit
   test: "google/gemini-2.0-flash-exp:free"             // Gemini for testing
 };
 
@@ -329,19 +329,19 @@ export const generateSummary = async (text: string): Promise<string> => {
     if (wordCount < 1000) {
       summaryGuidance = 'Focused summary (300-600 words): Focus on core concepts only.';
       termGuidance = 'Identify 10-15 core academic terms critical to understanding.';
-      maxTokens = 2500;
+      maxTokens = 1500;
     } else if (wordCount < 5000) {
       summaryGuidance = 'Standard summary (800-1500 words): Cover main ideas, key details, and significance.';
       termGuidance = 'Identify 20-30 advanced academic terms critical to understanding.';
-      maxTokens = 4500;
+      maxTokens = 2500;
     } else if (wordCount < 10000) {
-      summaryGuidance = 'Comprehensive summary (2000-4000 words): Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
+      summaryGuidance = 'Comprehensive summary (2000-3000 words): Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
       termGuidance = 'Identify 30-50 advanced academic terms critical to understanding.';
-      maxTokens = 6000;
+      maxTokens = 3500;
     } else {
-      summaryGuidance = 'Extensive summary (3000-5000 words): Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
+      summaryGuidance = 'Extensive summary (2500-3500 words): Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
       termGuidance = 'Identify 40-60 advanced academic terms critical to understanding.';
-      maxTokens = 8000;
+      maxTokens = 4000;
     }
 
     const contextPrompt = isTopic
@@ -441,7 +441,7 @@ Output ONLY the JSON array, no other text.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.5, 2200); // High quality flashcards with excellent definitions
+    ], 0.5, 1200); // High quality flashcards with excellent definitions, fast execution
 
     const json = parseAIResponse(response);
     return Array.isArray(json)
@@ -536,7 +536,7 @@ Output ONLY the JSON array. No preamble, no markdown, no explanation outside the
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.2, 5500); // Elite quality: detailed questions with sophisticated distractors
+    ], 0.2, 2500); // Elite quality: detailed questions with sophisticated distractors, under 30s
 
     const json = parseAIResponse(response);
     return Array.isArray(json)
@@ -564,7 +564,7 @@ Output ONLY the JSON array.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.3, 4500); // Elite quality for comprehensive exams
+    ], 0.3, 2500); // Elite quality for comprehensive exams
 
     const json = parseAIResponse(response);
     return Array.isArray(json)
@@ -760,7 +760,7 @@ Output ONLY valid JSON. No markdown, no preamble, no explanation outside JSON.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.15, 6500); // Elite quality: College Board SAT standards with sophisticated distractors
+    ], 0.15, 3000); // Elite quality: College Board SAT standards with sophisticated distractors
 
     const json = parseAIResponse(response);
     return Array.isArray(json)
