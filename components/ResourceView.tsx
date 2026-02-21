@@ -221,22 +221,6 @@ const SummaryTab = ({ content }: { content: string }) => {
 
   return (
     <>
-      {/* CSS for interactive terms */}
-      <style>{`
-            .interactive-term {
-                color: #60a5fa; /* blue-400 */
-                border-bottom: 1px dashed rgba(96, 165, 250, 0.5);
-                cursor: help;
-                transition: all 0.2s;
-                border-radius: 4px;
-                padding: 0 4px;
-            }
-            .interactive-term:hover {
-                background-color: rgba(37, 99, 235, 0.1);
-                color: #93c5fd;
-            }
-        `}</style>
-
       <div className="relative bg-[#0A0A0A] border border-white/5 p-6 md:p-16 rounded-3xl shadow-2xl animate-enter" ref={containerRef}>
         {/* Decorative Noise Background */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 rounded-3xl pointer-events-none"></div>

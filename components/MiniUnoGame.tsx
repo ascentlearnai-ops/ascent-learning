@@ -47,13 +47,18 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }, []);
 
     useEffect(() => {
-        if (turn === 'bot' && !message.includes('won')) {
+        if (turn === 'bot') {
             const timer = setTimeout(() => {
-                botTurn();
+                const playableCards = botHand.filter(isValidPlay);
+                if (playableCards.length > 0) {
+                    playCard(playableCards[0], false);
+                } else {
+                    drawCard(false);
+                }
             }, 600);
             return () => clearTimeout(timer);
         }
-    }, [turn, botHand, currentColor, discardPile, deck]);
+    }, [turn, botHand, discardPile, currentColor, deck]);
 
     const startNewGame = () => {
         const newDeck = generateDeck();
@@ -162,16 +167,6 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             setMessage('Your Turn!');
         } else {
             setMessage('Bot is thinking...');
-        }
-    };
-
-    const botTurn = () => {
-        // Check if bot can play
-        const playableCards = botHand.filter(isValidPlay);
-        if (playableCards.length > 0) {
-            playCard(playableCards[0], false);
-        } else {
-            drawCard(false);
         }
     };
 

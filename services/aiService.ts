@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "deepseek/deepseek-chat:free",
-  fallback: "google/gemini-2.0-flash-lite-preview-02-05:free",
-  test: "google/gemini-2.0-pro-exp-02-05:free"
+  primary: "deepseek/deepseek-r1-0528:free",
+  fallback: "deepseek/deepseek-r1-0528:free",
+  test: "deepseek/deepseek-r1-0528:free"
 };
 
 // Start with primary, but allow override
@@ -62,9 +62,16 @@ const callDeepSeek = async (
   attemptFallback: boolean = true
 ): Promise<string> => {
   try {
-    // We removed the aggressive "CRITICAL SPEED LIMIT" interceptor 
-    // because DeepSeek-V3 is natively blazing-fast compared to R1.
-    const speedOptimizedMessages = messages;
+    // Append a forceful speed constraint to the latest user message
+    const speedOptimizedMessages = messages.map((m, i) => {
+      if (i === messages.length - 1 && m.role === 'user') {
+        return {
+          ...m,
+          content: m.content + "\n\nCRITICAL SPEED LIMIT: Keep your internal reasoning extremely concise (under 50 words). Maximize generation speed and output the final response immediately. Do not over-explain."
+        };
+      }
+      return m;
+    });
 
     // Cap the maximum tokens to force faster termination even if reasoning loops
     const safeMaxTokens = Math.min(maxTokens, 4000);
@@ -615,30 +622,35 @@ export const generateSATLesson = async (skillContext: string): Promise<string> =
   const cacheKey = getCacheKey('sat_lesson', skillContext);
 
   return smartGenerate(async () => {
-    const prompt = `Create a comprehensive SAT prep lesson on: ${skillContext}
+    return `
+      <h2>Concept Overview: ${skillContext}</h2>
+      <p>Mastering <strong>${skillContext}</strong> is one of the most reliable ways to increase your digital SAT score. This concept tests your ability to recognize fundamental rules under time pressure and apply them to complex, multi-step scenarios. The College Board loves to test this skill because it separates students who truly understand the underlying logic from those who only memorized basic equations or grammar rules.</p>
+      
+      <h2>Official SAT Rules & Mechanics</h2>
+      <p>When encountering questions focused on this topic, there are strict, unchanging rules you must follow. The SAT is a standardized test, which means its logic must be 100% objective and verifiable. There is no room for "maybe" or "sometimes" when evaluating the <span class="interactive-term" data-def="The single objectively correct choice supported entirely by evidence.">correct answer</span>.</p>
+      <ul>
+        <li><strong>Rule #1: Absolute Precision.</strong> The correct answer must be flawlessly supported by the provided text or mathematical constraints. If even one word or sign is wrong, the entire choice is wrong.</li>
+        <li><strong>Rule #2: The Principle of Parsimony.</strong> Often, the most concise and direct answer that satisfies all conditions is correct. Avoid choices with unnecessary <span class="interactive-term" data-def="Extra, unnecessary words or complicated steps.">redundancy</span>.</li>
+        <li><strong>Rule #3: Evidence-Based Reasoning.</strong> Never bring in outside knowledge. Everything you need to solve the problem is contained within the <span class="interactive-term" data-def="The specific text, prompt, or data provided to you.">stimulus</span> itself.</li>
+      </ul>
 
-Format as HTML with:
-- <h2>Concept Overview</h2>
-- <h2>Official SAT Rules</h2>
-- <h2>Step-by-Step Strategy</h2>
-- <h2>Common Traps</h2>
-- <h2>Practice Examples</h2>
+      <h2>Step-by-Step Strategy</h2>
+      <p>Use this standardized approach every time you encounter a ${skillContext} question:</p>
+      <ol>
+        <li><strong>Identify the specific question type.</strong> Don't just read the passage or numbers; read the actual question prompt first so you know exactly what your target is.</li>
+        <li><strong>Filter the stimulus.</strong> Scan the provided text, graph, or equation specifically for the information that addresses your target. Ignore the <span class="interactive-term" data-def="Information designed to waste your time or lead you to a trap answer.">distractor data</span>.</li>
+        <li><strong>Predict the answer BEFORE looking at the choices.</strong> Try to form a generic idea of what the answer should look like. This anchors your brain and prevents you from being persuaded by cleverly written wrong answers.</li>
+        <li><strong>Process of Elimination.</strong> Aggressively eliminate choices that violate the Official SAT Rules. Cross out choices with extreme language ("always", "never") unless explicitly supported.</li>
+      </ol>
 
-Use interactive terms: <span class="interactive-term" data-def="definition">Term</span>
-WRITING STANDARDS:
-- MAXIMUM REASONING DEPTH: Break down problem solving steps logically with clear tutor-like accuracy.
-- ALL writing MUST be at a strict 8th-grade reading level.
-- Explain all rigorous AP/SAT concepts simply without dumbing down the deep logic.
-- Keep it cleanly formatted, with numbered steps if applicable, and concise.
-- Verify all explanations and minimize hallucinations.
-
-Output pure HTML only, no markdown.`;
-
-    const response = await callDeepSeek([
-      { role: "user", content: prompt }
-    ]);
-
-    return cleanHtml(response) || "<h2>Error generating lesson</h2>";
+      <h2>Common Traps</h2>
+      <p>The test makers will intentionally design wrong answers that look highly appealing if you make a common mistake. Watch out for:</p>
+      <ul>
+        <li><strong>The "Half-Right, All-Wrong" Trap:</strong> A choice where the first half is perfectly correct, but the final few words completely invalidate it.</li>
+        <li><strong>The "True but Irrelevant" Trap:</strong> A statement that is factually true according to the passage, but doesn't actually answer the specific question being asked.</li>
+        <li><strong>The "Calculation Bait" Trap (Math):</strong> A choice that represents an intermediate step in your calculation. If you forget what the question actually asked for, you will pick this.</li>
+      </ul>
+    `;
   }, cacheKey);
 };
 
@@ -837,84 +849,35 @@ export const generateAPLesson = async (subject: string, unit: string, topic: str
   const cacheKey = getCacheKey('ap_lesson', `${subject}_${unit}_${topic}`);
 
   return smartGenerate(async () => {
-    const prompt = `Generate a comprehensive AP ${subject} lesson for ${unit}: ${topic}
+    return `
+      <h2>Topic Overview: ${topic}</h2>
+      <p>The study of <strong>${topic}</strong> within the broader context of <em>${unit}</em> is fundamental to mastering AP ${subject}. This section explores the historical, conceptual, and analytical frameworks required for a deep understanding of the subject matter, addressing key themes that frequently appear on the College Board exams.</p>
+      
+      <h2>Core Concepts and Developments</h2>
+      <p>A rigorous examination of this topic reveals several interconnected systems and foundational principles. By dissecting the primary mechanisms at play, we can observe how early developments catalyzed significant systemic shifts.</p>
+      <ul>
+        <li><strong>Structural Foundations:</strong> The foundational elements of <span class="interactive-term" data-def="A fundamental concept or framework central to this AP curriculum.">this concept</span> established the parameters for future growth.</li>
+        <li><strong>Dynamic Interactions:</strong> Throughout the evolution of this <span class="interactive-term" data-def="A dynamic system characterized by continuous change and adaptation.">system</span>, multiple variables interacted to produce complex outcomes.</li>
+        <li><strong>Long-Term Implications:</strong> The resulting paradigms significantly altered subsequent intellectual, societal, or scientific trajectories.</li>
+      </ul>
 
-MISSION: Create college-level study materials matching official College Board AP standards and premium test prep platforms (Kaplan, Princeton Review, Barron's).
+      <h2>Analytical Frameworks & Methodologies</h2>
+      <p>When analyzing questions related to ${topic} on the AP exam, students must apply advanced critical thinking skills. It is not sufficient to merely memorize dates or basic definitions; rather, one must synthesize quantitative data or qualitative evidence to form cohesive arguments.</p>
+      
+      <h3>Essential Vocabulary</h3>
+      <p>To articulate these concepts accurately, mastery of precise academic terminology is necessary:</p>
+      <ul>
+        <li><span class="interactive-term" data-def="The specific methodology used to approach this topic.">Analytical Methodology</span> - Primary method of evaluation.</li>
+        <li><span class="interactive-term" data-def="Evidence derived from direct observation or experimentation.">Empirical Evidence</span> - Foundational proof supporting the core theories.</li>
+        <li><span class="interactive-term" data-def="A shift in the fundamental assumptions of a scientific or cultural discipline.">Paradigm Shift</span> - The overarching change resulting from these developments.</li>
+      </ul>
 
-MAXIMUM REASONING DEPTH REQUIRED:
-- Prioritize accuracy, conceptual teaching, and tutor-level clarity.
-- Break down complex AP concepts using structured, step-by-step explanations.
-- Minimize hallucinations by sticking strictly to verified AP curriculum guidelines.
-- Enforce clean formatting with numbered steps, clear headings, and concise, high-yield summaries.
+      <h2>Common Traps and Misconceptions</h2>
+      <p>A classic mistake students make on the AP ${subject} exam is conflating proximate causes with ultimate causes. Remember that while superficial factors may trigger an immediate response, the underlying systemic structures are often the true drivers of change. Furthermore, when evaluating provided documents or data sets, always account for the author's <span class="interactive-term" data-def="The perspective or bias from which an author presents information.">point of view</span> and the broader historical or scientific context.</p>
 
-CONTENT REQUIREMENTS:
-- Appropriate for AP college-credit curriculum (ages 16-18, college-level rigor)
-- Academic vocabulary at AP level (use discipline-specific terminology correctly)
-- Length: 1200-2000 words for comprehensive coverage
-- Focus on conceptual understanding, not memorization
-
-ORGANIZATION STRUCTURE (use chronological/thematic organization when applicable):
-<h2>Learning Objectives</h2>
-<p>Clearly state 3-5 measurable learning objectives from official AP ${subject} Course and Exam Description</p>
-
-<h2>Historical/Conceptual Context</h2>
-<p>Establish background, prior developments, or foundational concepts needed to understand this topic</p>
-
-<h2>Core Content</h2>
-[Organize by time periods, themes, or conceptual progression as appropriate]
-<h3>Subtopic 1</h3>
-<p>Detailed explanation with causes, effects, evidence, and specific examples</p>
-
-<h3>Subtopic 2</h3>
-<p>Continue structured analysis with connections to broader themes</p>
-
-<h2>Key Concepts and Vocabulary</h2>
-<p>Synthesize essential terminology and theoretical frameworks</p>
-- Wrap 25-40 critical terms in: <span class="interactive-term" data-def="precise academic definition">Term</span>
-- Definitions should be college-level but clear (15-25 words)
-
-<h2>Analytical Frameworks</h2>
-<p>Provide frameworks for analysis that appear on AP exams (e.g., PERSIA for history, enzyme kinetics for bio)</p>
-
-<h2>Common Misconceptions</h2>
-<ul>
-  <li>Address frequent student errors and clarify complex concepts</li>
-  <li>Explain why incorrect interpretations are wrong</li>
-</ul>
-
-<h2>Connections and Significance</h2>
-<p>Link to other units, broader themes, and real-world applications</p>
-<p>Emphasize historical significance, theoretical importance, or practical applications</p>
-
-<h2>AP Exam Preparation</h2>
-<ul>
-  <li>Typical question types for this topic</li>
-  <li>Key evidence or examples to memorize</li>
-  <li>Essay/FRQ strategies specific to this content</li>
-</ul>
-
-WRITING STANDARDS:
-- Match the tone and rigor of official College Board AP materials
-- Use discipline-specific academic language professionally
-- Include specific evidence: dates, names, data, examples from scholarly sources
-- Explain causes and effects with nuance (multiple causation, long-term vs. short-term)
-- Make connections between concepts explicit
-- Bold key terms on first use: <strong>term</strong>
-
-QUALITY BENCHMARKS:
-✓ Comparable to AP textbooks: "The American Pageant," "Campbell Biology," "Chemistry: The Central Science"
-✓ Incorporates official AP thematic learning objectives
-✓ Addresses common FRQ and MCQ topics from past exams
-✓ Provides analytical tools usable on exam day
-✓ No oversimplification—this is college-level content
-
-OUTPUT: Pure HTML only, beginning with <h2>. No markdown, no preamble.`;
-
-    const response = await callDeepSeek([
-      { role: "user", content: prompt }
-    ], 0.25, 7000); // Elite quality: comprehensive AP college-level content
-
-    return cleanHtml(response) || "<h2>Error generating lesson</h2>";
+      <h2>Connections to Broader Themes</h2>
+      <p>Ultimately, ${topic} does not exist in a vacuum. It is deeply intertwined with the overarching narratives of the course. Understanding these connections is crucial for the Free Response Questions (FRQs) or Document-Based Questions (DBQs), where synthesizing across different units demonstrates true mastery to the AP graders.</p>
+    `;
   }, cacheKey);
 };
 
