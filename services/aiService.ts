@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "deepseek/deepseek-r1-0528:free",
-  fallback: "deepseek/deepseek-r1-0528:free",
-  test: "deepseek/deepseek-r1-0528:free"
+  primary: "deepseek/deepseek-chat:free",
+  fallback: "google/gemini-2.0-flash-lite-preview-02-05:free",
+  test: "google/gemini-2.0-pro-exp-02-05:free"
 };
 
 // Start with primary, but allow override
@@ -62,16 +62,9 @@ const callDeepSeek = async (
   attemptFallback: boolean = true
 ): Promise<string> => {
   try {
-    // Append a forceful speed constraint to the latest user message
-    const speedOptimizedMessages = messages.map((m, i) => {
-      if (i === messages.length - 1 && m.role === 'user') {
-        return {
-          ...m,
-          content: m.content + "\n\nCRITICAL SPEED LIMIT: Keep your internal reasoning extremely concise (under 50 words). Maximize generation speed and output the final response immediately. Do not over-explain."
-        };
-      }
-      return m;
-    });
+    // We removed the aggressive "CRITICAL SPEED LIMIT" interceptor 
+    // because DeepSeek-V3 is natively blazing-fast compared to R1.
+    const speedOptimizedMessages = messages;
 
     // Cap the maximum tokens to force faster termination even if reasoning loops
     const safeMaxTokens = Math.min(maxTokens, 4000);
