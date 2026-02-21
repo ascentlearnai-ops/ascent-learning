@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "qwen/qwen3-next-80b-a3b-instruct:free",
-  fallback: "qwen/qwen3-next-80b-a3b-instruct:free",
-  test: "qwen/qwen3-next-80b-a3b-instruct:free"
+  primary: "provider-1/qwen3-next-80b-a3b-instruct-fp8-tee",
+  fallback: "provider-1/qwen3-next-80b-a3b-instruct-fp8-tee",
+  test: "provider-1/qwen3-next-80b-a3b-instruct-fp8-tee"
 };
 
 // Start with primary, but allow override
@@ -74,7 +74,7 @@ const callDeepSeek = async (
 
   try {
     const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
+      "https://api.a4f.co/v1/chat/completions",
       {
         model: currentModel,
         messages: messages,
