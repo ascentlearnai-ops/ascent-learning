@@ -111,8 +111,8 @@ const ResourceView: React.FC<ResourceViewProps> = ({ resourceId, onBack, darkMod
                 style={{
                   width: '140px', // Approx width, ideally measured dynamically
                   transform: `translateX(${activeTab === 'summary' ? '0%' :
-                      activeTab === 'flashcards' ? '100%' :
-                        activeTab === 'quiz' ? '200%' : '300%'
+                    activeTab === 'flashcards' ? '100%' :
+                      activeTab === 'quiz' ? '200%' : '300%'
                     })`
                 }}
               />
@@ -382,6 +382,11 @@ const QuizTab = ({ questions, isExam = false }: { questions: QuizQuestion[], isE
 
         {/* Question Card */}
         <div className="w-full space-y-10 animate-enter key={currentQuestionIndex}">
+          {q.imageUrl && (
+            <div className="mb-4 rounded-2xl overflow-hidden border border-white/5 bg-white flex justify-center p-4">
+              <img src={q.imageUrl} alt="Question Graphic" className="max-w-full h-auto object-contain max-h-[400px]" />
+            </div>
+          )}
           <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight text-white mb-8 tracking-tight">
             {cleanMathText(q.question)}
           </h3>
@@ -394,8 +399,8 @@ const QuizTab = ({ questions, isExam = false }: { questions: QuizQuestion[], isE
                   key={optIdx}
                   onClick={() => handleSelect(q.id, optIdx)}
                   className={`w-full text-left p-6 rounded-2xl border transition-all duration-300 flex items-center group relative overflow-hidden ${isSelected
-                      ? 'bg-primary-600 border-primary-500 text-white shadow-[0_0_30px_rgba(37,99,235,0.3)] scale-[1.02]'
-                      : 'bg-[#0A0A0A] border-white/5 hover:border-white/20 text-zinc-400 hover:bg-[#101010] hover:text-white'
+                    ? 'bg-primary-600 border-primary-500 text-white shadow-[0_0_30px_rgba(37,99,235,0.3)] scale-[1.02]'
+                    : 'bg-[#0A0A0A] border-white/5 hover:border-white/20 text-zinc-400 hover:bg-[#101010] hover:text-white'
                     }`}
                 >
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-6 transition-colors flex-shrink-0 ${isSelected ? 'border-white bg-white' : 'border-zinc-700 group-hover:border-zinc-500'
@@ -492,10 +497,17 @@ const QuizTab = ({ questions, isExam = false }: { questions: QuizQuestion[], isE
         return (
           <div key={q.id} className="p-6 md:p-8 rounded-3xl border border-white/5 bg-[#0A0A0A] transition-all hover:border-white/10 animate-enter group" style={{ animationDelay: `${idx * 100}ms` }}>
             <div className="flex items-start justify-between mb-8">
-              <h3 className="font-bold text-lg md:text-xl leading-relaxed text-white">
-                <span className="text-zinc-600 mr-4 text-sm font-mono align-middle bg-zinc-900 px-2 py-1 rounded">Q{String(idx + 1).padStart(2, '0')}</span>
-                {cleanMathText(q.question)}
-              </h3>
+              <div className="w-full">
+                {q.imageUrl && (
+                  <div className="mb-6 rounded-2xl overflow-hidden border border-white/5 bg-white flex justify-center p-4 w-full">
+                    <img src={q.imageUrl} alt="Question Graphic" className="max-w-full h-auto object-contain max-h-[300px]" />
+                  </div>
+                )}
+                <h3 className="font-bold text-lg md:text-xl leading-relaxed text-white">
+                  <span className="text-zinc-600 mr-4 text-sm font-mono align-middle bg-zinc-900 px-2 py-1 rounded">Q{String(idx + 1).padStart(2, '0')}</span>
+                  {cleanMathText(q.question)}
+                </h3>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -633,14 +645,14 @@ const ChatTab = ({ context }: { context: string }) => {
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 md:gap-5 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-enter`}>
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg transition-transform hover:scale-110 ${msg.role === 'model'
-                ? 'bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
-                : 'bg-zinc-800 border border-zinc-700'
+              ? 'bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
+              : 'bg-zinc-800 border border-zinc-700'
               }`}>
               {msg.role === 'model' ? <Sparkles size={16} /> : <User size={16} className="text-zinc-400" />}
             </div>
             <div className={`max-w-[85%] md:max-w-[70%] p-4 md:p-5 rounded-2xl text-sm leading-6 md:leading-7 shadow-sm ${msg.role === 'user'
-                ? 'bg-primary-600 text-white rounded-tr-none shadow-[0_5px_20px_rgba(37,99,235,0.2)]'
-                : 'bg-zinc-900/50 border border-white/5 text-zinc-300 rounded-tl-none'
+              ? 'bg-primary-600 text-white rounded-tr-none shadow-[0_5px_20px_rgba(37,99,235,0.2)]'
+              : 'bg-zinc-900/50 border border-white/5 text-zinc-300 rounded-tl-none'
               }`}>
               {msg.content}
             </div>

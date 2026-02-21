@@ -1,14 +1,12 @@
 import { Flashcard, QuizQuestion } from "../types";
 import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits } from "../utils/security";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// DeepSeek R1 via OpenRouter configuration
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-
-// Model selection - prioritize speed and quality (under 30s guarantee)
+// Model selection - prioritize speed and quality
 const MODELS = {
-  primary: "stepfun-ai/step-3.5-flash:free",           // StepFun 3.5 Flash (free, user requested)
-  fallback: "google/gemma-3-12b-it:free",              // Gemma 3 12B fallback 
-  test: "google/gemini-2.0-flash-exp:free"             // Gemini for testing
+  primary: "gemini-2.0-flash-lite-preview-02-05", // Extremely fast, high limit free model
+  fallback: "gemini-2.0-flash-exp",              // Powerful Gemini 2.0 fallback 
+  test: "gemini-1.5-flash-8b"                    // Lighter fallback
 };
 
 // Start with primary, but allow override
@@ -16,9 +14,9 @@ let currentModel = MODELS.primary;
 
 // Get API key from environment
 const getApiKey = () => {
-  const key = import.meta.env.VITE_OPENROUTER_API_KEY ||
+  const key = import.meta.env.VITE_GEMINI_API_KEY ||
     import.meta.env.VITE_API_KEY ||
-    import.meta.env.VITE_GEMINI_API_KEY; // Fallback to old var name
+    import.meta.env.VITE_OPENROUTER_API_KEY;
   return key || '';
 };
 
@@ -62,7 +60,7 @@ const setCachedResponse = (key: string, data: any) => {
   }
 };
 
-// Call DeepSeek via OpenRouter
+// Call Gemini Native SDK
 const callDeepSeek = async (
   messages: Array<{ role: string; content: string }>,
   temperature: number = 0.7,
@@ -71,76 +69,76 @@ const callDeepSeek = async (
 ): Promise<string> => {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error("API Key is missing. Please set VITE_OPENROUTER_API_KEY in your environment variables.");
+    throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your environment variables.");
   }
 
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: currentModel,
+    generationConfig: {
+      temperature,
+      maxOutputTokens: maxTokens,
+    }
+  });
+
   try {
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": typeof window !== 'undefined' ? window.location.origin : "https://ascent-learning.app",
-        "X-Title": "Ascent Learning Platform"
-      },
-      body: JSON.stringify({
+    if (messages.length === 1 && messages[0].role === 'user') {
+      const result = await model.generateContent(messages[0].content);
+      const content = result.response.text();
+      console.log(`✓ Generated with native Gemini (${currentModel})`);
+      return content;
+    } else {
+      // Chat completion mapping
+      const history = [];
+      let sysInstruction = '';
+
+      for (let i = 0; i < messages.length - 1; i++) {
+        const msg = messages[i];
+        if (msg.role === 'system') {
+          sysInstruction += msg.content + '\n';
+        } else {
+          history.push({
+            role: (msg.role === 'assistant' || msg.role === 'model') ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          });
+        }
+      }
+
+      const lastMsg = messages[messages.length - 1].content;
+
+      const chatModel = sysInstruction ? genAI.getGenerativeModel({
         model: currentModel,
-        messages,
-        temperature,
-        max_tokens: maxTokens,
-        top_p: 0.9,
-        frequency_penalty: 0,
-        presence_penalty: 0
-      })
-    });
+        systemInstruction: sysInstruction,
+        generationConfig: { temperature, maxOutputTokens: maxTokens }
+      }) : model;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenRouter API Error with ${currentModel}:`, response.status, errorText);
-
-      // Try fallback model if primary fails
-      if (attemptFallback && currentModel === MODELS.primary) {
-        console.log("Primary model failed, trying fallback model...");
-        currentModel = MODELS.fallback;
-        return await callDeepSeek(messages, temperature, maxTokens, false); // Don't recurse fallback
-      }
-
-      // Parse error for better user messages
-      let userMessage = "AI generation failed. ";
-      if (response.status === 401) {
-        userMessage = "Invalid API key. Please check your VITE_OPENROUTER_API_KEY environment variable.";
-      } else if (response.status === 429) {
-        userMessage = "Rate limit exceeded. Please wait a moment and try again.";
-      } else if (response.status === 402) {
-        userMessage = "Insufficient credits. Please add credits to your OpenRouter account at openrouter.ai";
-      } else if (errorText.includes("model")) {
-        userMessage = "AI model temporarily unavailable. Please try again in a moment.";
-      } else {
-        userMessage = `API error (${response.status}). Please try again.`;
-      }
-
-      throw new Error(userMessage);
+      const chat = chatModel.startChat({ history });
+      const result = await chat.sendMessage(lastMsg);
+      const content = result.response.text();
+      console.log(`✓ Generated with native Gemini (${currentModel})`);
+      return content;
     }
-
-    const data = await response.json();
-
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-      console.error("Unexpected API response:", data);
-      throw new Error("AI response format error. Please try again.");
-    }
-
-    const content = data.choices[0].message.content || "";
-    console.log(`✓ Generated with ${currentModel}`);
-    return content;
-
   } catch (error: any) {
-    // Network errors
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      console.error("Network error:", error);
-      throw new Error("Network error. Please check your internet connection and try again.");
+    const errorText = error.message || "";
+    console.error(`Gemini API Error with ${currentModel}:`, errorText);
+
+    if (attemptFallback && currentModel === MODELS.primary) {
+      console.log("Primary model failed, trying fallback model...");
+      currentModel = MODELS.fallback;
+      return await callDeepSeek(messages, temperature, maxTokens, false);
     }
-    // Re-throw formatted errors
-    throw error;
+
+    let userMessage = "AI generation failed. ";
+    if (errorText.includes("API key not valid")) {
+      userMessage = "Invalid API key. Please check your VITE_GEMINI_API_KEY.";
+    } else if (errorText.toLowerCase().includes("cannot construct url")) {
+      userMessage = "Network error connecting to Google's API.";
+    } else if (errorText.includes("429") || errorText.includes("quota")) {
+      userMessage = "Rate limit exceeded. Please wait a moment and try again.";
+    } else {
+      userMessage = `API error: ${errorText}`;
+    }
+    throw new Error(userMessage);
   }
 };
 
@@ -251,7 +249,44 @@ const smartGenerate = async <T>(
 // Check if input is short topic vs full content
 const isShortOrUrl = (text: string) => text.trim().length < 300 || text.startsWith('http');
 
-// YouTube video content synthesis
+// Multi-proxy fetch for better reliability
+const fetchWithFallback = async (url: string) => {
+  const encUrl = encodeURIComponent(url);
+  const proxies = [
+    `https://corsproxy.io/?${encUrl}`,
+    `https://api.allorigins.win/raw?url=${encUrl}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encUrl}`
+  ];
+  let lastError;
+  for (const proxy of proxies) {
+    try {
+      const resp = await fetch(proxy);
+      if (resp.ok) return await resp.text();
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError || new Error("All proxies failed to fetch");
+};
+
+// Image Generation using free Pollinations.ai API (no API key required, unlimited limits)
+export const generateImage = async (prompt: string): Promise<string> => {
+  try {
+    // Generate a random seed so duplicate prompts don't get the cached image
+    const seed = Math.floor(Math.random() * 1000000);
+    // Pollinations generates images instantly strictly via URL encoding
+    const encodedPrompt = encodeURIComponent(`Clean, precise, minimalist educational diagram on a white background: ${prompt}`);
+
+    // Using the free pollinations.ai image API which has exceptionally high limits and is completely free
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=1024&height=1024&nologo=true`;
+
+    return imageUrl;
+  } catch (err) {
+    console.error("Image generation error:", err);
+    return "";
+  }
+};
+
 export const synthesizeVideoContent = async (url: string): Promise<string> => {
   try {
     const urlObj = new URL(url);
@@ -262,12 +297,7 @@ export const synthesizeVideoContent = async (url: string): Promise<string> => {
     if (!videoId || videoId.length < 10) throw new Error("Invalid YouTube URL");
 
     const targetUrl = 'https://www.youtube.com/watch?v=' + videoId;
-    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
-
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error("Could not fetch YouTube page");
-    const data = await response.json();
-    const html = data.contents;
+    const html = await fetchWithFallback(targetUrl);
 
     // Find the player response JSON
     const regex = /"captions":({.*?})/;
@@ -280,12 +310,8 @@ export const synthesizeVideoContent = async (url: string): Promise<string> => {
 
     const englishTrack = captionTracks.find((track: any) => track.languageCode === 'en' || (track.name?.simpleText || '').toLowerCase().includes('english')) || captionTracks[0];
 
-    // Fetch the transcript XML
-    const xmlResponse = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(englishTrack.baseUrl));
-    if (!xmlResponse.ok) throw new Error("Failed to fetch transcript XML");
-
-    const xmlData = await xmlResponse.json();
-    const xml = xmlData.contents;
+    // Fetch the transcript XML using fallback proxies
+    const xml = await fetchWithFallback(englishTrack.baseUrl);
 
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xml, "text/xml");
@@ -514,6 +540,7 @@ JSON FORMAT (strict):
 [
   {
     "question": "In the context of [topic], which of the following best explains [concept]?",
+    "imagePrompt": "Detailed visual description of chart/graph/geometry if question requires visual (else leave out)",
     "options": [
       "A) [Plausible but incorrect - common misconception]",
       "B) [Plausible but incorrect - partially true]",
@@ -539,16 +566,27 @@ Output ONLY the JSON array. No preamble, no markdown, no explanation outside the
     ], 0.2, 4000); // Elite quality: detailed questions with sophisticated distractors, under 30s
 
     const json = parseAIResponse(response);
-    return Array.isArray(json)
-      ? json.map((q: any, index: number) => ({
+    if (!Array.isArray(json)) return [];
+
+    const processedQuestions = await Promise.all(json.map(async (q: any, index: number) => {
+      let imageUrl = q.imageUrl;
+
+      if (q.imagePrompt && !imageUrl) {
+        imageUrl = await generateImage(q.imagePrompt);
+      }
+
+      return {
         id: `qz-${Date.now()}-${index}`,
+        imageUrl: imageUrl || undefined,
         question: q.question || '',
         options: Array.isArray(q.options) ? q.options : [],
         correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
         explanation: q.explanation || '',
         type: 'multiple-choice' as const
-      }))
-      : [];
+      };
+    }));
+
+    return processedQuestions;
   }, cacheKey);
 };
 
@@ -567,16 +605,23 @@ Output ONLY the JSON array.`;
     ], 0.3, 4000); // Elite quality for comprehensive exams
 
     const json = parseAIResponse(response);
-    return Array.isArray(json)
-      ? json.map((q: any, index: number) => ({
+    if (!Array.isArray(json)) return [];
+
+    return await Promise.all(json.map(async (q: any, index: number) => {
+      let imageUrl = q.imageUrl;
+      if (q.imagePrompt && !imageUrl) {
+        imageUrl = await generateImage(q.imagePrompt);
+      }
+      return {
         id: `qz-exam-${Date.now()}-${index}`,
+        imageUrl: imageUrl || undefined,
         question: q.question || '',
         options: Array.isArray(q.options) ? q.options : [],
         correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
         explanation: q.explanation || '',
         type: 'multiple-choice' as const
-      }))
-      : [];
+      };
+    }));
   });
 };
 
@@ -651,7 +696,7 @@ MATH QUESTION TYPES:
 - Word problems requiring multi-step reasoning
 - Interpreting graphs, tables, or data representations
 - Applied algebra in real-world contexts
-- Geometric reasoning with diagrams (describe diagram in question)
+- Geometric reasoning with diagrams (if appropriate, provide a detailed description in "imagePrompt")
 - Function analysis and transformations
 
 MATH ANSWER CHOICES:
@@ -737,6 +782,7 @@ JSON FORMAT (exact structure):
 [
   {
     ${type === 'READING_WRITING' ? '"passage": "Authentic 40-120 word passage here...",\n    ' : ''}"question": "Official SAT-style question stem?",
+    "imagePrompt": "Detailed visual description of chart/graph/geometry if question requires visual (else leave out)",
     "options": [
       "A) First choice",
       "B) Second choice", 
@@ -763,17 +809,29 @@ Output ONLY valid JSON. No markdown, no preamble, no explanation outside JSON.`;
     ], 0.15, 5000); // Elite quality: College Board SAT standards with sophisticated distractors
 
     const json = parseAIResponse(response);
-    return Array.isArray(json)
-      ? json.map((q: any, index: number) => ({
+    if (!Array.isArray(json)) return [];
+
+    const processedQuestions = await Promise.all(json.map(async (q: any, index: number) => {
+      let imageUrl = q.imageUrl;
+
+      // Auto-generate image if prompt exists and image URL is not provided
+      if (q.imagePrompt && !imageUrl) {
+        imageUrl = await generateImage(q.imagePrompt);
+      }
+
+      return {
         id: `sat-${type}-${Date.now()}-${index}`,
         passage: q.passage || '',
+        imageUrl: imageUrl || undefined,
         question: q.question || '',
         options: Array.isArray(q.options) ? q.options : [],
         correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
         explanation: q.explanation || '',
         type: 'multiple-choice' as const
-      }))
-      : [];
+      };
+    }));
+
+    return processedQuestions;
   }, cacheKey);
 };
 
@@ -1054,36 +1112,38 @@ export const generateAPQuiz = async (
   return generateAPQuestions(count, subject, unit, difficulty);
 };
 
-// Generate weekly plan for StrategicPlanner
+// Generate weekly plan for StrategicPlanner flexibly based on user goals
 export const generateWeeklyPlan = async (goals: string[]): Promise<Array<{
   day: string;
-  tasks: string[];
+  tasks: Array<{ title: string, startTime: string, endTime: string }>;
 }>> => {
   const combinedGoals = goals.join(', ');
-  const cacheKey = getCacheKey('weekly_plan', combinedGoals);
+  const cacheKey = getCacheKey('smart_plan', combinedGoals);
 
   return smartGenerate(async () => {
-    const prompt = `Create a detailed weekly study plan for these goals: ${combinedGoals}
+    const prompt = `Convert the following user scheduling request into a structured JSON plan: "${combinedGoals}"
 
-Generate a structured plan for 7 days (Monday through Sunday).
-For each day, provide 2-4 specific study tasks.
-Each task should be actionable and take 30-90 minutes.
+INSTRUCTIONS:
+1. Identify if they requested a specific number of days, days of the week, or times of day (e.g. "after 5pm").
+2. Default to a 7-day schedule if no timeframe is given.
+3. Generate 1-4 highly actionable study tasks for each designated day.
+4. If a time constraint is requested (e.g., "after 5pm"), make sure "startTime" and "endTime" reflect that constraint exactly (e.g., using 24-hour time like "17:00" and "18:30"). Otherwise, use reasonable times (like "09:00" or "14:00").
 
-Format as JSON array:
+Format strictly as a JSON array where "day" is "Monday", "Tuesday", etc:
 [
   {
     "day": "Monday",
-    "tasks": ["Task 1", "Task 2", "Task 3"]
-  },
-  ...
+    "tasks": [
+      { "title": "Review AP Calc Limits", "startTime": "17:00", "endTime": "18:30" }
+    ]
+  }
 ]
 
-Make tasks specific, measurable, and progressive throughout the week.
-Output ONLY the JSON array.`;
+Output ONLY valid JSON. Make it strictly parseable JSON.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.7, 2000);
+    ], 0.7, 3000);
 
     const json = parseAIResponse(response);
 

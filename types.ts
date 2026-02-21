@@ -11,6 +11,7 @@ export interface Flashcard {
 export interface QuizQuestion {
   id: string;
   passage?: string; // New field for context paragraphs/reading passages
+  imageUrl?: string; // New field for auto-generated images like graphs/diagrams
   question: string;
   options: string[];
   correctAnswer: number; // Index of correct option (for Multiple Choice)

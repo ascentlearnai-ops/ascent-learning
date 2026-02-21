@@ -82,8 +82,8 @@ const TabButton = ({ active, onClick, label, icon }: any) => (
   <button
     onClick={onClick}
     className={`px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-wide flex items-center gap-2 transition-all duration-300 ${active
-        ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700'
-        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+      ? 'bg-zinc-800 text-white shadow-lg border border-zinc-700'
+      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
       }`}
   >
     {icon} {label}
@@ -252,6 +252,12 @@ const PracticeSessionOverlay = ({ questions, type, onClose, onRegenerate }: { qu
             </div>
           )}
 
+          {reviewQuestion.imageUrl && (
+            <div className="mb-6 rounded-2xl overflow-hidden border border-white/5 bg-white flex justify-center p-2">
+              <img src={reviewQuestion.imageUrl} alt="Question reference" className="max-w-full h-auto object-contain max-h-[300px]" />
+            </div>
+          )}
+
           <h3 className="text-xl font-medium text-white mb-8 whitespace-pre-wrap font-serif leading-relaxed">
             {reviewQuestion.question}
           </h3>
@@ -385,6 +391,12 @@ const PracticeSessionOverlay = ({ questions, type, onClose, onRegenerate }: { qu
             {!currentQ.passage && (
               <div className="text-center text-zinc-500 font-mono text-xs uppercase tracking-widest mb-6">
                 Question Node {currentIndex + 1}
+              </div>
+            )}
+
+            {currentQ.imageUrl && (
+              <div className="mb-8 rounded-2xl overflow-hidden border border-white/5 bg-white flex justify-center p-4">
+                <img src={currentQ.imageUrl} alt="Question Graphic" className="max-w-full h-auto object-contain max-h-[400px]" />
               </div>
             )}
 
@@ -673,6 +685,11 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
                               {isCorrect ? 'Correct' : 'Incorrect'}
                             </span>
                           </div>
+                          {q.imageUrl && (
+                            <div className="mb-4 rounded-xl overflow-hidden border border-white/5 bg-white flex justify-center p-2">
+                              <img src={q.imageUrl} alt="Question reference" className="max-w-full h-auto object-contain max-h-[250px]" />
+                            </div>
+                          )}
                           <h4 className="text-lg font-medium text-white mb-4">{q.question}</h4>
                           {!isCorrect && (
                             <div className="space-y-4">
@@ -719,6 +736,12 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
                       <span>Question {currentIndex + 1} of {questions.length}</span>
                       <span>Exam Mode</span>
                     </div>
+
+                    {currentQ.imageUrl && (
+                      <div className="mb-8 rounded-2xl overflow-hidden border border-white/5 bg-white flex justify-center p-4">
+                        <img src={currentQ.imageUrl} alt="Question graphic" className="max-w-full h-auto object-contain max-h-[350px]" />
+                      </div>
+                    )}
 
                     <h3 className={`text-3xl font-medium text-white mb-10 leading-tight font-serif ${!currentQ.passage ? 'text-center' : ''}`}>{currentQ.question}</h3>
 
