@@ -41,23 +41,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
     setIsAuthenticating(true);
 
     setTimeout(() => {
-      if (inputId === 'Client_Login' && password === 'Pradyun@19') {
-        localStorage.setItem('ascent_user_tier', 'Scholar');
+      // Custom Admin Override
+      if (inputId === 'Client_Login2010' && password === 'Pradyun@19') {
+        localStorage.setItem('ascent_user_tier', 'Admin'); // special admin tier
         handleSuccessfulLogin(inputId);
         return;
       }
 
-      const isValidKey = ACCESS_KEYS.includes(inputId.toUpperCase());
-
-      if (isValidKey) {
-        localStorage.setItem('ascent_user_tier', 'Initiate');
-        handleSuccessfulLogin(inputId.toUpperCase());
-      } else {
-        setIsAuthenticating(false);
-        setShowLoginModal(false);
-        setShowWaitlistModal(true);
-      }
-
+      // If not correct admin logic, reject as unauthorized (since regular pilot logic is removed)
+      setIsAuthenticating(false);
+      setLoginError('Invalid Administrator Credentials.');
     }, 1200);
   };
 
@@ -417,7 +410,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
             <div className="text-center mb-10">
               <Logo size={56} className="mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-white mb-2 font-sans">Secure Handshake</h3>
-              <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">System Capacity: 50/50 Pilots</p>
+              <p className="text-zinc-500 text-xs font-mono uppercase tracking-widest">Authenticate via Google Data Stream</p>
             </div>
 
             {supabase ? (
@@ -465,7 +458,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
                 <div className="relative flex items-center py-4">
                   <div className="flex-grow border-t border-white/10"></div>
-                  <span className="flex-shrink-0 px-4 text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Or Access Key</span>
+                  <span className="flex-shrink-0 px-4 text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Administrator Override</span>
                   <div className="flex-grow border-t border-white/10"></div>
                 </div>
 
@@ -474,12 +467,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     <input
                       type="text"
                       className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono text-xs tracking-wide"
-                      placeholder="ENTER PILOT ID (E.G. PILOT-01)"
+                      placeholder="ENTER ADMIN ID"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                     />
                   </div>
-                  {username === 'Client_Login' && (
+                  {username === 'Client_Login2010' && (
                     <div className="animate-enter">
                       <input
                         type="password"

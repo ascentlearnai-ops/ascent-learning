@@ -11,6 +11,7 @@ import ExamGeneratorModal from './ExamGeneratorModal';
 import LandingPage from './LandingPage';
 import APCenter from './APCenter';
 import SATPrep from './SATPrep';
+import AdminPanel from './AdminPanel';
 import { Logo } from './Logo';
 import { getResources } from '../services/mockDb';
 import { getUserTier, unlockSession, initIdleMonitor } from '../utils/security';
@@ -18,7 +19,7 @@ import { supabase } from '../lib/supabase';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'timer' | 'planner' | 'calendar' | 'ap-center' | 'sat-prep'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'timer' | 'planner' | 'calendar' | 'ap-center' | 'sat-prep' | 'admin'>('dashboard');
   const [resourceViewId, setResourceViewId] = useState<string | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isExamOpen, setIsExamOpen] = useState(false);
@@ -280,6 +281,13 @@ const App: React.FC = () => {
       case 'sat-prep':
         content = <SATPrep />;
         break;
+      case 'admin':
+        if (userTier === 'Admin') {
+          content = <AdminPanel />;
+        } else {
+          content = <Dashboard darkMode={true} resources={resources} onResourceClick={handleResourceClick} onUploadClick={() => setIsUploadOpen(true)} onExamClick={() => setIsExamOpen(true)} todoTasks={todoTasks} weeklyEvents={weeklyEvents} onAddTodo={handleAddTodo} onToggleTodo={handleToggleTodo} onDeleteTodo={handleDeleteTodo} />;
+        }
+        break;
     }
   }
 
@@ -367,6 +375,14 @@ const App: React.FC = () => {
           {/* Mobile-only Nav Items */}
           <div className="lg:hidden mt-6 pt-6 border-t border-white/5">
             <div className="px-4 text-[10px] font-bold uppercase tracking-widest text-zinc-600 mb-2">Tools</div>
+            {userTier === 'Admin' && (
+              <NavItem
+                icon={<Shield size={18} />}
+                label="Admin Panel"
+                active={currentView === 'admin'}
+                onClick={() => handleViewChange('admin')}
+              />
+            )}
             <NavItem
               icon={<Clock size={18} />}
               label="Neural Timer"
@@ -469,6 +485,14 @@ const App: React.FC = () => {
                 label="Calendar"
                 icon={<Calendar size={14} />}
               />
+              {userTier === 'Admin' && (
+                <TopNavLink
+                  active={currentView === 'admin'}
+                  onClick={() => setCurrentView('admin')}
+                  label="Admin Command Center"
+                  icon={<Shield size={14} />}
+                />
+              )}
             </nav>
           </header>
         )}
