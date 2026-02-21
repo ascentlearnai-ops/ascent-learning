@@ -22,29 +22,30 @@ export const BetaWelcomeModal: React.FC<BetaWelcomeModalProps> = ({ isOpen, onCl
                 </button>
 
                 <div className="px-8 pt-10 pb-8 text-center relative z-0">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center mb-6 relative">
-                        <Sparkles size={28} className="text-indigo-400" />
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex flex-col items-center justify-center border-2 border-[#0A0A0A]">
-                            <span className="text-[10px] font-bold text-white">B</span>
+                    <div className="w-20 h-20 mx-auto rounded-[2rem] bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-white/10 flex flex-col items-center justify-center mb-8 relative shadow-[0_0_30px_rgba(99,102,241,0.15)]">
+                        <Sparkles size={32} className="text-cyan-400" />
+                        <div className="absolute -bottom-2 -right-2 px-2 py-0.5 bg-cyan-500 rounded-md flex items-center justify-center border-2 border-[#0A0A0A] shadow-lg">
+                            <span className="text-[10px] font-black text-black tracking-widest uppercase">Beta</span>
                         </div>
                     </div>
 
-                    <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome to Ascent Beta</h2>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-6">
-                        <AlertTriangle size={12} /> Early Access Build
+                    <h2 className="text-3xl font-black text-white mb-3 tracking-tight font-serif">Ascent Beta Phase</h2>
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-8">
+                        <AlertTriangle size={14} className="text-indigo-400" /> Early Access Build
                     </div>
 
-                    <p className="text-zinc-400 text-sm leading-relaxed mb-8 px-4">
-                        Ascent is actively utilizing the bleeding-edge DeepSeek R1 AI model for unparalleled tutoring logic and accuracy. <strong className="text-zinc-200 font-medium">Because of this extremely high reasoning depth, generating content takes a little bit of time.</strong>
+                    <p className="text-zinc-400 text-sm leading-relaxed mb-10 px-2">
+                        Ascent is utilizing the bleeding-edge <strong className="text-cyan-400 font-bold">DeepSeek R1 AI</strong> model for unparalleled tutor-level reasoning logic.
+                        Because of this massive reasoning depth, generating content <strong className="text-white font-medium">takes longer than normal</strong>.
                         <br /><br />
-                        Despite the short waits, it is an exceptionally powerful study tool. Thank you for helping us test this early beta!
+                        Despite the short waits, the accuracy and quality of the generated materials are exceptionally high. Thank you for testing this early build!
                     </p>
 
                     <button
                         onClick={onClose}
-                        className="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:scale-105"
+                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:scale-[1.02] active:scale-[0.98] uppercase tracking-wider text-sm"
                     >
-                        I Understand, Enter Nexus
+                        Enter Ascent Nexus
                     </button>
                 </div>
             </div>
