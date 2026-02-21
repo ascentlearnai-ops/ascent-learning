@@ -6,6 +6,7 @@ import { generateAPLesson, generateAPQuestions, generateFlashcards } from '../se
 import { createResource } from '../services/mockDb';
 import { Resource } from '../types';
 import { getUserTier } from '../utils/security';
+import { GenerationLoaderModal } from './GenerationLoaderModal';
 
 interface APCenterProps {
   onExamReady: (id: string) => void;
@@ -134,7 +135,10 @@ const APCenter: React.FC<APCenterProps> = ({ onExamReady }) => {
 
   if (selectedCourse) {
     return (
-      <div className="max-w-5xl mx-auto py-8 animate-enter">
+      <div className="max-w-5xl mx-auto py-8 animate-enter relative">
+        <GenerationLoaderModal isOpen={loadingUnit !== null} title="Extracting Unit Modules" subtitle={`Processing ${loadingUnit}`} />
+        <GenerationLoaderModal isOpen={loadingExam} title="Constructing Final Simulation" subtitle="Cross-referencing All Domains" />
+
         <button
           onClick={() => setSelectedCourse(null)}
           className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white mb-8 group transition-colors"
@@ -197,11 +201,7 @@ const APCenter: React.FC<APCenterProps> = ({ onExamReady }) => {
                 disabled={loadingUnit !== null}
                 className="px-6 py-2.5 rounded-full border border-white/10 hover:bg-white text-zinc-300 hover:text-black transition-all text-xs font-bold uppercase tracking-wide flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loadingUnit === unit.title ? (
-                  <span className="animate-pulse">Loading...</span>
-                ) : (
-                  <>Initialize <ChevronRight size={12} /></>
-                )}
+                Initialize <ChevronRight size={12} />
               </button>
             </div>
           ))}

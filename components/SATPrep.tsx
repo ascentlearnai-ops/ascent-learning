@@ -4,6 +4,7 @@ import { SAT_MATH_DOMAINS, SAT_READING_DOMAINS, SATDomain, SATSkill } from '../d
 import { generateSATQuestions, generateSATLesson } from '../services/aiService';
 import { QuizQuestion } from '../types';
 import { getUserTier } from '../utils/security';
+import { GenerationLoaderModal } from './GenerationLoaderModal';
 
 const SATPrep: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'practice' | 'topics' | 'full-exam'>('practice');
@@ -130,34 +131,28 @@ const GeneratorCard = ({ type, title, desc, icon, onGenerate }: { type: 'MATH' |
   };
 
   return (
-    <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-10 relative overflow-hidden flex flex-col h-full min-h-[400px] group hover:border-white/10 transition-colors">
-      <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${type === 'MATH' ? 'from-blue-600 to-cyan-400' : 'from-purple-600 to-pink-400'}`}></div>
+    <>
+      <GenerationLoaderModal isOpen={loading} title="Synthesizing Exam" subtitle="Compiling Question Bank" />
+      <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-10 relative overflow-hidden flex flex-col h-full min-h-[400px] group hover:border-white/10 transition-colors">
+        <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${type === 'MATH' ? 'from-blue-600 to-cyan-400' : 'from-purple-600 to-pink-400'}`}></div>
 
-      <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 py-12">
-        {loading ? (
-          <>
-            <div className="w-16 h-16 border-4 border-zinc-800 border-t-white rounded-full animate-spin"></div>
-            <p className="text-zinc-500 animate-pulse font-mono text-sm uppercase tracking-widest">Synthesizing...</p>
-          </>
-        ) : (
-          <>
-            <div className={`w-24 h-24 rounded-3xl flex items-center justify-center ${type === 'MATH' ? 'bg-blue-900/10 text-blue-400 shadow-2xl' : 'bg-purple-900/10 text-purple-400 shadow-2xl'}`}>
-              {icon}
-            </div>
-            <div>
-              <h3 className="text-3xl font-bold text-white mb-4">{title}</h3>
-              <p className="text-zinc-400 max-w-sm mx-auto leading-relaxed">{desc}</p>
-            </div>
-            <button
-              onClick={generate}
-              className="px-8 py-4 bg-white text-black font-bold rounded-full shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-all flex items-center gap-3 text-sm tracking-wide group"
-            >
-              <Play size={16} fill="currentColor" /> GENERATE SET
-            </button>
-          </>
-        )}
+        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 py-12">
+          <div className={`w-24 h-24 rounded-3xl flex items-center justify-center ${type === 'MATH' ? 'bg-blue-900/10 text-blue-400 shadow-2xl' : 'bg-purple-900/10 text-purple-400 shadow-2xl'}`}>
+            {icon}
+          </div>
+          <div>
+            <h3 className="text-3xl font-bold text-white mb-4">{title}</h3>
+            <p className="text-zinc-400 max-w-sm mx-auto leading-relaxed">{desc}</p>
+          </div>
+          <button
+            onClick={generate}
+            className="px-8 py-4 bg-white text-black font-bold rounded-full shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-all flex items-center gap-3 text-sm tracking-wide group"
+          >
+            <Play size={16} fill="currentColor" /> GENERATE SET
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -199,6 +194,10 @@ const PracticeSessionOverlay = ({ questions, type, onClose, onRegenerate }: { qu
     setTextInput("");
     setIsRegenerating(false);
   };
+
+  if (isRegenerating) {
+    return <GenerationLoaderModal isOpen={true} title="Regenerating Module" subtitle="Recompiling Adaptive Vectors" />;
+  }
 
   const handleNextStage = () => {
     setShowResults(true);
@@ -621,13 +620,10 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-10 bg-[#080808]">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center h-full gap-6">
-              <div className="w-12 h-12 border-2 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
-              <p className="text-zinc-500 text-sm">Loading study guide...</p>
-            </div>
-          ) : error ? (
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-10 bg-[#080808] relative">
+          <GenerationLoaderModal isOpen={loading} title="Loading Study Module" subtitle="Extracting Concept Documentation" />
+
+          {error ? (
             <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
               <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
                 <AlertTriangle size={28} className="text-red-400" />
@@ -645,13 +641,10 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
             <div className="prose prose-invert max-w-3xl mx-auto" dangerouslySetInnerHTML={{ __html: styledLesson }} />
           ) : (
             // QUIZ TAB
-            <div className="h-full flex flex-col">
-              {qLoading ? (
-                <div className="flex flex-col items-center justify-center h-full gap-4">
-                  <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="text-zinc-500 text-xs">Generating Questions...</p>
-                </div>
-              ) : showResults ? (
+            <div className="h-full flex flex-col relative">
+              <GenerationLoaderModal isOpen={qLoading} title="Generating Skill Assessment" subtitle="Assembling Node Challenges" />
+
+              {showResults ? (
                 <div className="h-full flex flex-col animate-in fade-in pb-8">
                   <div className="text-center space-y-4 mb-8 shrink-0">
                     <div className="w-16 h-16 mx-auto rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">

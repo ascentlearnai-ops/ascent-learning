@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "z-ai/glm-4.5-air:free",
-  fallback: "z-ai/glm-4.5-air:free",
-  test: "z-ai/glm-4.5-air:free"
+  primary: "deepseek/deepseek-r1-0528:free",
+  fallback: "deepseek/deepseek-r1-0528:free",
+  test: "deepseek/deepseek-r1-0528:free"
 };
 
 // Start with primary, but allow override
@@ -62,13 +62,27 @@ const callDeepSeek = async (
   attemptFallback: boolean = true
 ): Promise<string> => {
   try {
+    // Append a forceful speed constraint to the latest user message
+    const speedOptimizedMessages = messages.map((m, i) => {
+      if (i === messages.length - 1 && m.role === 'user') {
+        return {
+          ...m,
+          content: m.content + "\n\nCRITICAL SPEED LIMIT: Keep your internal reasoning extremely concise (under 50 words). Maximize generation speed and output the final response immediately. Do not over-explain."
+        };
+      }
+      return m;
+    });
+
+    // Cap the maximum tokens to force faster termination even if reasoning loops
+    const safeMaxTokens = Math.min(maxTokens, 4000);
+
     const response = await axios.post(
       "/api/generate",
       {
         model: currentModel,
-        messages: messages,
+        messages: speedOptimizedMessages,
         temperature: temperature,
-        max_tokens: maxTokens,
+        max_tokens: safeMaxTokens,
       }
     );
 
@@ -358,6 +372,13 @@ INTERACTIVE VOCABULARY:
 - Wrap in: <span class="interactive-term" data-def="precise, clear definition">Term</span>
 - Definitions should be concise (10-15 words) and academically precise
 
+OUTPUT STRUCTURE AND DEPTH:
+- Generate a comprehensive, step-by-step structured summary.
+- Maximize reasoning depth and focus on concept-teaching.
+- Prioritize accuracy and tutor-level clarity.
+- Use numbered steps, clear headings, and concise summaries.
+- Avoid hallucinations by strictly sticking to the provided text.
+
 HTML FORMATTING (NO MARKDOWN):
 - Use semantic HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>
 - Bold key terms on first use: <strong>term</strong>
@@ -421,10 +442,11 @@ Format as JSON array:
 ]
 
 CRITICAL WRITING STANDARDS:
-- STRICTLY define terms and questions using an 8th-grade reading level.
-- KEEP ALL advanced academic vocabulary/concepts, but explain them simply.
-- Focus on key concepts, terms, and facts.
-- Keep answers concise but complete.
+- MAXIMUM REASONING DEPTH: Break down complex concepts into structured, step-by-step explanations on the back of the card if necessary.
+- STRICTLY define terms and questions using an 8th-grade reading level but retain AP/SAT rigor.
+- KEEP ALL advanced academic vocabulary/concepts, but explain them simply with tutor-level clarity.
+- Prioritize accuracy and verifiable facts. Zero hallucinations.
+- Keep answers concise, cleanly formatted, and easy to review.
 
 Output ONLY the JSON array, no other text.`;
 
@@ -523,7 +545,7 @@ QUALITY CHECKLIST:
 ✓ Are distractors realistic and challenging?
 ✓ Is the correct answer unambiguously supported by evidence?
 
-Output ONLY the JSON array. No preamble, no markdown, no explanation outside the JSON.`;
+Output ONLY the JSON array, no other text.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
@@ -562,6 +584,12 @@ Content: ${aggregatedText.substring(0, 50000)}
 
 Format as JSON array with same structure as before.
 Make questions challenging and cover different topics.
+
+MAXIMUM REASONING DEPTH REQUIRED:
+- Break down explanations into structured, numbered step-by-step tutor logic.
+- Verify final answers meticulously. Prioritize extreme accuracy over speed.
+- Minimize hallucinations by strictly sticking to the provided sources.
+
 Output ONLY the JSON array.`;
 
     const response = await callDeepSeek([
@@ -605,9 +633,11 @@ Format as HTML with:
 
 Use interactive terms: <span class="interactive-term" data-def="definition">Term</span>
 WRITING STANDARDS:
+- MAXIMUM REASONING DEPTH: Break down problem solving steps logically with clear tutor-like accuracy.
 - ALL writing MUST be at a strict 8th-grade reading level.
 - Explain all rigorous AP/SAT concepts simply without dumbing down the deep logic.
-- Keep it clear, engaging, and concise.
+- Keep it cleanly formatted, with numbered steps if applicable, and concise.
+- Verify all explanations and minimize hallucinations.
 
 Output pure HTML only, no markdown.`;
 
@@ -700,6 +730,12 @@ OFFICIAL SAT STANDARDS:
 These questions must be indistinguishable from real College Board SAT questions.
 Reference: Official Digital SAT Practice, Khan Academy SAT, Bluebook practice tests.
 
+MAXIMUM REASONING DEPTH REQUIRED:
+- Prioritize extreme accuracy and tutor-level clarity. 
+- Break down explanations into structured, numbered step-by-step reasoning.
+- Verify final answers mathematically or logically before outputting.
+- Minimize any hallucinations by strictly adhering to official rules.
+
 QUESTION CONSTRUCTION:
 - Stem: Clear, concise, test-specific skills (20-50 words)
 - Use official SAT phrasing: "Which choice best..." "Based on the text..." "What is the value of..."
@@ -729,7 +765,7 @@ C) 44  [CORRECT: 2(3x + 7) = 2(22) = 44]
 D) 51  [error: added instead of multiplied]` : `
 READING EXAMPLE:
 Passage: "The scientist's methodology was meticulous, involving repeated trials and systematic documentation..."
-Question: "As used in the text, 'meticulous' most nearly means"
+Question: "As used in line X, 'word' most nearly means"
 A) expensive  [wrong: not about cost]
 B) careful  [CORRECT: precise and thorough]
 C) innovative  [wrong: about novelty, not precision]
@@ -811,6 +847,12 @@ export const generateAPLesson = async (subject: string, unit: string, topic: str
     const prompt = `Generate a comprehensive AP ${subject} lesson for ${unit}: ${topic}
 
 MISSION: Create college-level study materials matching official College Board AP standards and premium test prep platforms (Kaplan, Princeton Review, Barron's).
+
+MAXIMUM REASONING DEPTH REQUIRED:
+- Prioritize accuracy, conceptual teaching, and tutor-level clarity.
+- Break down complex AP concepts using structured, step-by-step explanations.
+- Minimize hallucinations by sticking strictly to verified AP curriculum guidelines.
+- Enforce clean formatting with numbered steps, clear headings, and concise, high-yield summaries.
 
 CONTENT REQUIREMENTS:
 - Appropriate for AP college-credit curriculum (ages 16-18, college-level rigor)
@@ -899,8 +941,14 @@ export const generateAPQuestions = async (
       hard: 'Synthesis level: Demand evaluation, synthesis of multiple concepts, or complex historical/scientific reasoning. 20-35% of students should answer correctly.'
     };
 
-    const prompt = `Generate ${count} official AP ${subject} multiple-choice questions for ${unit}.
-Target Difficulty: ${difficulty} - ${difficultyGuidance[difficulty]}
+    const prompt = `MISSION: Generate authoritative, college-level multiple-choice questions for AP ${subject}.
+Topic focus: ${unit}
+Target difficulty: ${difficulty} (AP scale 1-5, where 4-5 is ${difficulty === 'hard' ? 'required' : 'optional'})
+
+MAXIMUM REASONING DEPTH REQUIRED:
+- Break down explanations into structured, numbered step-by-step tutor logic.
+- Verify final answers meticulously. Prioritize accuracy over speed.
+- Minimize hallucinations. Ensure distractors are based on plausible student misconceptions.
 
 COLLEGE BOARD AP STANDARDS:
 These questions must be indistinguishable from official AP exam questions.

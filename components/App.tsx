@@ -13,6 +13,7 @@ import APCenter from './APCenter';
 import SATPrep from './SATPrep';
 import AdminPanel from './AdminPanel';
 import { Logo } from './Logo';
+import { BetaWelcomeModal } from './BetaWelcomeModal';
 import { getResources } from '../services/mockDb';
 import { getUserTier, unlockSession, initIdleMonitor, setMemoryTier } from '../utils/security';
 import { supabase } from '../lib/supabase';
@@ -32,6 +33,7 @@ const App: React.FC = () => {
   // Mobile UI States
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showRotatePrompt, setShowRotatePrompt] = useState(false);
+  const [showBetaPopup, setShowBetaPopup] = useState(false);
 
   // Shared To-Do State
   const [todoTasks, setTodoTasks] = useState<StudyTask[]>([]);
@@ -223,6 +225,21 @@ const App: React.FC = () => {
     return <LandingPage onLogin={handleLogin} />;
   }
 
+  // Handle beta modal trigger once authenticated
+  if (isAuthenticated && userTier && userTier !== 'Initiate' && userTier !== 'Scholar' && userTier !== 'Admin') {
+    // wait for proper tier hydration
+  } else if (isAuthenticated && userTier && userTier !== 'Admin') {
+    const hasSeenBeta = sessionStorage.getItem('ascent_beta_seen');
+    if (!hasSeenBeta && !showBetaPopup) {
+      setShowBetaPopup(true);
+    }
+  }
+
+  const closeBetaPopup = () => {
+    sessionStorage.setItem('ascent_beta_seen', 'true');
+    setShowBetaPopup(false);
+  };
+
   // Determine what to render in the main content area
   let content;
   if (resourceViewId) {
@@ -289,6 +306,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#030303] text-white selection:bg-primary-900/50 selection:text-white font-sans">
+      <BetaWelcomeModal isOpen={showBetaPopup} onClose={closeBetaPopup} />
 
       {/* Rotate Prompt Overlay */}
       {showRotatePrompt && (
