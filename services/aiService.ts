@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "nousresearch/hermes-3-llama-3.1-405b", // Hermes 3 405B Instruct (free)
-  fallback: "qwen/qwen-2.5-72b-instruct",          // Qwen fallback (free)
-  test: "meta-llama/llama-3.2-3b-instruct"         // Llama 3.2 fallback (free)
+  primary: "nousresearch/hermes-3-llama-3.1-405b:free", // Hermes 3 405B Instruct (free)
+  fallback: "qwen/qwen-2.5-72b-instruct:free",          // Qwen fallback (free)
+  test: "meta-llama/llama-3.2-3b-instruct:free"         // Llama 3.2 fallback (free)
 };
 
 // Start with primary, but allow override
