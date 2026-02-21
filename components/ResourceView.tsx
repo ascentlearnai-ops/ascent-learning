@@ -155,8 +155,8 @@ const SummaryTab = ({ content }: { content: string }) => {
   const [definition, setDefinition] = useState<{ term: string, def: string, x: number, y: number } | null>(null);
 
   useEffect(() => {
-    // Add event listener for interactive terms
-    const handleTermClick = (e: MouseEvent) => {
+    // Add event listener for interactive terms (hover)
+    const handleTermHover = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.classList.contains('interactive-term')) {
         const rect = target.getBoundingClientRect();
@@ -170,27 +170,33 @@ const SummaryTab = ({ content }: { content: string }) => {
             x: rect.left + (rect.width / 2),
             y: rect.top
           });
-          e.stopPropagation();
         }
-      } else {
+      }
+    };
+
+    const handleTermOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('interactive-term')) {
         setDefinition(null);
       }
     };
 
     const container = containerRef.current;
     if (container) {
-      container.addEventListener('click', handleTermClick);
+      container.addEventListener('mouseover', handleTermHover);
+      container.addEventListener('mouseout', handleTermOut);
     }
 
-    // Close on scroll or outside click
+    // Close on scroll or outside click (fallback)
     const handleOutside = () => setDefinition(null);
     window.addEventListener('scroll', handleOutside, true);
-    window.addEventListener('click', handleOutside);
 
     return () => {
-      if (container) container.removeEventListener('click', handleTermClick);
+      if (container) {
+        container.removeEventListener('mouseover', handleTermHover);
+        container.removeEventListener('mouseout', handleTermOut);
+      }
       window.removeEventListener('scroll', handleOutside, true);
-      window.removeEventListener('click', handleOutside);
     };
   }, []);
 

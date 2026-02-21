@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "nvidia/nemotron-nano-9b-v2:free",           // NVIDIA Nemotron Nano 9B V2 (free)
-  fallback: "qwen/qwen-2.5-72b-instruct:free",          // Qwen fallback (free)
-  test: "meta-llama/llama-3.2-3b-instruct:free"         // Llama 3.2 fallback (free)
+  primary: "qwen/qwen-2.5-72b-instruct:free",
+  fallback: "qwen/qwen-2.5-72b-instruct:free",
+  test: "qwen/qwen-2.5-72b-instruct:free"
 };
 
 // Start with primary, but allow override
@@ -108,8 +108,8 @@ const callDeepSeek = async (
     }
 
     let userMessage = "AI generation failed. ";
-    if (errorText.includes("Invalid key")) {
-      userMessage = "Invalid API key. Please check your VITE_OPENROUTER_API_KEY.";
+    if (errorText.includes("Invalid key") || errorText.includes("401")) {
+      userMessage = "Invalid API key. Please check your variables.";
     } else if (errorText.includes("429") || errorText.includes("quota")) {
       userMessage = "Rate limit exceeded. Please wait a moment and try again.";
     } else {
@@ -365,11 +365,12 @@ ORGANIZATION STRUCTURE:
 4. Specifically include cause-and-effect analysis and specific examples/evidence from the source
 
 WRITING STANDARDS:
-- Academic vocabulary at 8th-grade level (clear but rigorous—avoid oversimplification)
-- Professional tone matching AP textbooks and College Board materials
-- Focus on: key ideas, causes and effects, historical/conceptual significance, patterns, and connections
-- Include specific evidence, data, examples when available
-- Emphasize WHY things matter, not just WHAT happened
+- ALL summaries MUST be written using strictly 8th-grade level vocabulary so they are extremely easy to understand.
+- However, you MUST STILL INCLUDE all the advanced academic vocabulary, concepts, and detailed information from the original source.
+- Explain complex ideas simply without dumbing down the actual information.
+- Professional tone matching AP textbooks but highly accessible.
+- Focus on: key ideas, causes and effects, historical/conceptual significance, patterns, and connections.
+- Emphasize WHY things matter, not just WHAT happened.
 
 INTERACTIVE VOCABULARY:
 - ${termGuidance}
@@ -438,8 +439,12 @@ Format as JSON array:
   ...
 ]
 
-Focus on key concepts, terms, and facts.
-Keep answers concise but complete.
+CRITICAL WRITING STANDARDS:
+- STRICTLY define terms and questions using an 8th-grade reading level.
+- KEEP ALL advanced academic vocabulary/concepts, but explain them simply.
+- Focus on key concepts, terms, and facts.
+- Keep answers concise but complete.
+
 Output ONLY the JSON array, no other text.`;
 
     const response = await callDeepSeek([
@@ -499,7 +504,7 @@ ANSWER CHOICES (CRITICAL):
 - ALL FOUR must sound plausible to someone who partially understands the material
 - Distractors should contain partial truths, common misconceptions, or adjacent concepts
 - Only ONE choice is definitively correct based on evidence
-- Use academic phrasing: "emerged primarily as a result of" not "happened because"
+- Explain advanced concepts simply, honoring an 8th-grade reading level, but use academic phrasing: "emerged primarily as a result of" not "happened because"
 
 DISTRACTOR QUALITY (like real College Board exams):
 - Include dates/facts that are close but not exact
@@ -511,6 +516,7 @@ EXPLANATIONS:
 - 30-60 words explaining WHY the correct answer is right
 - Reference specific evidence from source material
 - Explain why key distractors are incorrect (especially the most tempting one)
+- Write explanations strictly at an 8th-grade reading level.
 - Academic tone: "This choice accurately reflects..." "The evidence demonstrates..."
 
 JSON FORMAT (strict):
@@ -617,7 +623,11 @@ Format as HTML with:
 - <h2>Practice Examples</h2>
 
 Use interactive terms: <span class="interactive-term" data-def="definition">Term</span>
-8th grade reading level, clear and concise.
+WRITING STANDARDS:
+- ALL writing MUST be at a strict 8th-grade reading level.
+- Explain all rigorous AP/SAT concepts simply without dumbing down the deep logic.
+- Keep it clear, engaging, and concise.
+
 Output pure HTML only, no markdown.`;
 
     const response = await callDeepSeek([
