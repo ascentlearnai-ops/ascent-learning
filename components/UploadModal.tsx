@@ -150,10 +150,11 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
         if (!validation.valid) throw new Error(validation.error);
       }
       setProcessingStep('synthesizing');
-      const summary = await generateSummary(content);
-      setProcessingStep('generating');
-      const flashcards = await generateFlashcards(content);
-      const quiz = await generateQuiz(content);
+      const [summary, flashcards, quiz] = await Promise.all([
+        generateSummary(content),
+        generateFlashcards(content),
+        generateQuiz(content)
+      ]);
       setProcessingStep('finalizing');
       await new Promise(r => setTimeout(r, 800));
       const newResource: Resource = {

@@ -14,8 +14,9 @@ import SATPrep from './SATPrep';
 import AdminPanel from './AdminPanel';
 import { Logo } from './Logo';
 import { getResources } from '../services/mockDb';
-import { getUserTier, unlockSession, initIdleMonitor } from '../utils/security';
+import { getUserTier, unlockSession, initIdleMonitor, setMemoryTier } from '../utils/security';
 import { supabase } from '../lib/supabase';
+import { fetchUserTier } from '../services/supabaseDb';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -108,7 +109,7 @@ const App: React.FC = () => {
     const user = localStorage.getItem('ascent_username');
 
     if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session) {
           setIsAuthenticated(true);
           const email = session.user.email || 'user';
@@ -116,21 +117,14 @@ const App: React.FC = () => {
           localStorage.setItem('ascent_username', email);
           localStorage.setItem('ascent_session', 'true');
 
-          // Auto-upgrade specific users to Scholar Tier
-          const scholarEmails = ['ascentlearnai@gmail.com', 'pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com'];
-          let currentTier = localStorage.getItem('ascent_user_tier') || 'Initiate';
-
-          if (email && scholarEmails.includes(email.toLowerCase())) {
-            currentTier = 'Scholar';
-          }
-
-          localStorage.setItem('ascent_user_tier', currentTier);
+          const currentTier = await fetchUserTier();
+          setMemoryTier(currentTier);
           setUserTier(currentTier);
           initIdleMonitor(handleLogout);
         }
       });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session) {
           setIsAuthenticated(true);
           const email = session.user.email || 'user';
@@ -138,15 +132,8 @@ const App: React.FC = () => {
           localStorage.setItem('ascent_username', email);
           localStorage.setItem('ascent_session', 'true');
 
-          // Auto-upgrade specific users to Scholar Tier
-          const scholarEmails = ['ascentlearnai@gmail.com', 'pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com'];
-          let currentTier = localStorage.getItem('ascent_user_tier') || 'Initiate';
-
-          if (email && scholarEmails.includes(email.toLowerCase())) {
-            currentTier = 'Scholar';
-            localStorage.setItem('ascent_user_tier', currentTier);
-          }
-
+          const currentTier = await fetchUserTier();
+          setMemoryTier(currentTier);
           setUserTier(currentTier);
           initIdleMonitor(handleLogout);
         } else {
@@ -172,13 +159,22 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, []);
 
-  const handleLogin = (username: string) => {
+  const handleLogin = async (username: string) => {
     localStorage.setItem('ascent_session', 'true');
     localStorage.setItem('ascent_username', username);
     setCurrentUsername(username);
     setIsAuthenticated(true);
-    setUserTier(getUserTier());
-    // Init Idle Monitor immediately upon login
+
+    // Fallback/Legacy Admin Logic from Landing Page Override 
+    if (localStorage.getItem('ascent_user_tier') === 'Admin') {
+      setMemoryTier('Admin');
+      setUserTier('Admin');
+    } else {
+      const dbTier = await fetchUserTier();
+      setMemoryTier(dbTier);
+      setUserTier(dbTier);
+    }
+
     initIdleMonitor(handleLogout);
   };
 

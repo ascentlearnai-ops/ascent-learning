@@ -3,10 +3,14 @@
 
 export type UserTier = 'Initiate' | 'Scholar' | 'Admin';
 
+let sessionMemoryTier: UserTier = 'Initiate';
+
+export const setMemoryTier = (t: UserTier) => {
+  sessionMemoryTier = t;
+};
+
 export const getUserTier = (): UserTier => {
-  const tier = localStorage.getItem('ascent_user_tier');
-  if (tier === 'Admin') return 'Admin';
-  return (tier === 'Scholar') ? 'Scholar' : 'Initiate';
+  return sessionMemoryTier;
 };
 
 export const getTierLimits = () => {

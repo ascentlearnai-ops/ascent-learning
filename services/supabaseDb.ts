@@ -120,3 +120,20 @@ export const getUserStats = async (): Promise<UserStats> => {
     hoursLearned: 0
   };
 };
+
+export const fetchUserTier = async (): Promise<'Initiate' | 'Scholar' | 'Admin'> => {
+  if (!supabase) return 'Initiate';
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 'Initiate';
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('tier')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !data) {
+    return 'Initiate';
+  }
+  return data.tier as 'Initiate' | 'Scholar' | 'Admin';
+};

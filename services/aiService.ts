@@ -12,13 +12,7 @@ const MODELS = {
 // Start with primary, but allow override
 let currentModel = MODELS.primary;
 
-// Get API key from environment
-const getApiKey = () => {
-  const key = import.meta.env.VITE_OPENROUTER_API_KEY ||
-    import.meta.env.VITE_API_KEY ||
-    import.meta.env.VITE_GEMINI_API_KEY;
-  return key || '';
-};
+// Keys are now securely managed on the backend proxy
 
 // Response cache for optimization
 const responseCache = new Map<string, any>();
@@ -67,27 +61,14 @@ const callDeepSeek = async (
   maxTokens: number = 4000,
   attemptFallback: boolean = true
 ): Promise<string> => {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error("API Key is missing. Please set VITE_OPENROUTER_API_KEY in your environment variables.");
-  }
-
   try {
     const response = await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
+      "/api/generate",
       {
         model: currentModel,
         messages: messages,
         temperature: temperature,
         max_tokens: maxTokens,
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin || "https://ascentlearning.ai", // Required by OpenRouter
-          "X-Title": "Ascent Learning Platform", // Required by OpenRouter
-        },
       }
     );
 
