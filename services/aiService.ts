@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "qwen/qwen-2.5-72b-instruct:free",
-  fallback: "qwen/qwen-2.5-72b-instruct:free",
-  test: "qwen/qwen-2.5-72b-instruct:free"
+  primary: "qwen/qwen3-next-80b-a3b-instruct:free",
+  fallback: "qwen/qwen3-next-80b-a3b-instruct:free",
+  test: "qwen/qwen3-next-80b-a3b-instruct:free"
 };
 
 // Start with primary, but allow override
