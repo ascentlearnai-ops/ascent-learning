@@ -42,7 +42,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
     setTimeout(() => {
       // Custom Admin Override
-      if (inputId === 'Client_Login2010' && password === 'Pradyun@19') {
+      if (inputId === 'Client_Login' && password === 'Pradyun@2010') {
         localStorage.setItem('ascent_user_tier', 'Admin'); // special admin tier
         handleSuccessfulLogin(inputId);
         return;
@@ -472,7 +472,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                       onChange={(e) => setUsername(e.target.value)}
                     />
                   </div>
-                  {username === 'Client_Login2010' && (
+                  {username === 'Client_Login' && (
                     <div className="animate-enter">
                       <input
                         type="password"
