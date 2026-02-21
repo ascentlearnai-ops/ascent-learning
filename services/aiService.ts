@@ -4,9 +4,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Model selection - prioritize speed and quality
 const MODELS = {
-  primary: "gemini-2.0-flash-lite-preview-02-05", // Extremely fast, high limit free model
-  fallback: "gemini-2.0-flash-exp",              // Powerful Gemini 2.0 fallback 
-  test: "gemini-1.5-flash-8b"                    // Lighter fallback
+  primary: "gemini-2.0-flash",
+  fallback: "gemini-1.5-pro",
+  test: "gemini-1.5-flash"
 };
 
 // Start with primary, but allow override
