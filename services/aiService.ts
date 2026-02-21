@@ -1,12 +1,12 @@
 import { Flashcard, QuizQuestion } from "../types";
 import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits } from "../utils/security";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import axios from 'axios';
 
-// Model selection - prioritize speed and quality
+// Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "gemini-2.0-flash",
-  fallback: "gemini-1.5-pro",
-  test: "gemini-1.5-flash"
+  primary: "nousresearch/hermes-3-llama-3.1-405b", // Hermes 3 405B Instruct (free)
+  fallback: "qwen/qwen-2.5-72b-instruct",          // Qwen fallback (free)
+  test: "meta-llama/llama-3.2-3b-instruct"         // Llama 3.2 fallback (free)
 };
 
 // Start with primary, but allow override
@@ -14,9 +14,9 @@ let currentModel = MODELS.primary;
 
 // Get API key from environment
 const getApiKey = () => {
-  const key = import.meta.env.VITE_GEMINI_API_KEY ||
+  const key = import.meta.env.VITE_OPENROUTER_API_KEY ||
     import.meta.env.VITE_API_KEY ||
-    import.meta.env.VITE_OPENROUTER_API_KEY;
+    import.meta.env.VITE_GEMINI_API_KEY;
   return key || '';
 };
 
@@ -60,7 +60,7 @@ const setCachedResponse = (key: string, data: any) => {
   }
 };
 
-// Call Gemini Native SDK
+// Call OpenRouter API
 const callDeepSeek = async (
   messages: Array<{ role: string; content: string }>,
   temperature: number = 0.7,
@@ -69,58 +69,37 @@ const callDeepSeek = async (
 ): Promise<string> => {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error("API Key is missing. Please set VITE_GEMINI_API_KEY in your environment variables.");
+    throw new Error("API Key is missing. Please set VITE_OPENROUTER_API_KEY in your environment variables.");
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: currentModel,
-    generationConfig: {
-      temperature,
-      maxOutputTokens: maxTokens,
-    }
-  });
-
   try {
-    if (messages.length === 1 && messages[0].role === 'user') {
-      const result = await model.generateContent(messages[0].content);
-      const content = result.response.text();
-      console.log(`✓ Generated with native Gemini (${currentModel})`);
-      return content;
-    } else {
-      // Chat completion mapping
-      const history = [];
-      let sysInstruction = '';
-
-      for (let i = 0; i < messages.length - 1; i++) {
-        const msg = messages[i];
-        if (msg.role === 'system') {
-          sysInstruction += msg.content + '\n';
-        } else {
-          history.push({
-            role: (msg.role === 'assistant' || msg.role === 'model') ? 'model' : 'user',
-            parts: [{ text: msg.content }]
-          });
-        }
-      }
-
-      const lastMsg = messages[messages.length - 1].content;
-
-      const chatModel = sysInstruction ? genAI.getGenerativeModel({
+    const response = await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
         model: currentModel,
-        systemInstruction: sysInstruction,
-        generationConfig: { temperature, maxOutputTokens: maxTokens }
-      }) : model;
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin || "https://ascentlearning.ai", // Required by OpenRouter
+          "X-Title": "Ascent Learning Platform", // Required by OpenRouter
+        },
+      }
+    );
 
-      const chat = chatModel.startChat({ history });
-      const result = await chat.sendMessage(lastMsg);
-      const content = result.response.text();
-      console.log(`✓ Generated with native Gemini (${currentModel})`);
-      return content;
+    if (response.data && response.data.choices && response.data.choices.length > 0) {
+      console.log(`✓ Generated with OpenRouter (${currentModel})`);
+      return response.data.choices[0].message.content;
+    } else {
+      throw new Error("Empty response from AI generation.");
     }
   } catch (error: any) {
-    const errorText = error.message || "";
-    console.error(`Gemini API Error with ${currentModel}:`, errorText);
+    const errorText = error.response?.data?.error?.message || error.message || "";
+    console.error(`OpenRouter API Error with ${currentModel}:`, errorText);
 
     if (attemptFallback && currentModel === MODELS.primary) {
       console.log("Primary model failed, trying fallback model...");
@@ -129,10 +108,8 @@ const callDeepSeek = async (
     }
 
     let userMessage = "AI generation failed. ";
-    if (errorText.includes("API key not valid")) {
-      userMessage = "Invalid API key. Please check your VITE_GEMINI_API_KEY.";
-    } else if (errorText.toLowerCase().includes("cannot construct url")) {
-      userMessage = "Network error connecting to Google's API.";
+    if (errorText.includes("Invalid key")) {
+      userMessage = "Invalid API key. Please check your VITE_OPENROUTER_API_KEY.";
     } else if (errorText.includes("429") || errorText.includes("quota")) {
       userMessage = "Rate limit exceeded. Please wait a moment and try again.";
     } else {
