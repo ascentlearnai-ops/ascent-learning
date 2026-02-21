@@ -1,28 +1,30 @@
 
 // simple-rate-limiter.ts
 
-export type UserTier = 'Initiate' | 'Scholar';
+export type UserTier = 'Initiate' | 'Scholar' | 'Admin';
 
 export const getUserTier = (): UserTier => {
   const tier = localStorage.getItem('ascent_user_tier');
+  if (tier === 'Admin') return 'Admin';
   return (tier === 'Scholar') ? 'Scholar' : 'Initiate';
 };
 
 export const getTierLimits = () => {
   const tier = getUserTier();
   switch (tier) {
+    case 'Admin':
     case 'Scholar':
       return {
         maxContentLength: 1000000, // Premium capacity
-        dailyUploads: 5000, 
+        dailyUploads: 5000,
         dailyChats: 10000,
-        label: 'Scholar'
+        label: tier === 'Admin' ? 'Admin' : 'Scholar'
       };
     case 'Initiate':
     default:
       return {
         // INCREASED to 200,000 to support long PDFs (>80k chars) per user request
-        maxContentLength: 200000, 
+        maxContentLength: 200000,
         dailyUploads: 50, // Increased to 50
         dailyChats: 1500,
         label: 'Initiate'
@@ -63,7 +65,7 @@ export const checkSessionLock = (username: string): boolean => {
   const lock = localStorage.getItem(`session_lock_${username}`);
   // Session expires after 24 hours of absolute time
   if (lock && Date.now() - parseInt(lock) < 24 * 60 * 60 * 1000) {
-      return true;
+    return true;
   }
   return false;
 };
@@ -80,7 +82,7 @@ export const unlockSession = (username: string) => {
 let idleTimer: any;
 export const initIdleMonitor = (onTimeout: () => void) => {
   const TIMEOUT_MS = 30 * 60 * 1000; // 30 Minutes
-  
+
   const resetTimer = () => {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
@@ -93,7 +95,7 @@ export const initIdleMonitor = (onTimeout: () => void) => {
   window.onkeypress = resetTimer;
   window.onclick = resetTimer;
   window.onscroll = resetTimer;
-  
+
   resetTimer();
 };
 
@@ -111,11 +113,11 @@ export class RateLimiter {
   check(): boolean {
     const now = Date.now();
     this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
-    
+
     if (this.timestamps.length >= this.limit) {
       return false;
     }
-    
+
     this.timestamps.push(now);
     return true;
   }
@@ -164,13 +166,13 @@ export class DailyRateLimiter {
   getRemaining(dynamicLimit: number): number {
     const record = this.getRecord();
     const today = new Date().toDateString();
-    
+
     if (record.date !== today) {
       return dynamicLimit;
     }
     return Math.max(0, dynamicLimit - record.count);
   }
-  
+
   getCurrentCount(): number {
     const record = this.getRecord();
     const today = new Date().toDateString();
@@ -180,7 +182,7 @@ export class DailyRateLimiter {
 }
 
 // Relaxed limits to allow burst generation
-export const generationRateLimiter = new RateLimiter(150, 60000); 
+export const generationRateLimiter = new RateLimiter(150, 60000);
 export const chatSpamLimiter = new RateLimiter(50, 60000);
 
 export const dailyChatLimiter = new DailyRateLimiter('chat_daily');
@@ -196,9 +198,9 @@ export const validateInput = (input: string, context: 'content' | 'chat'): { val
   const MAX_CHAT_LENGTH = 2000;
 
   if (context === 'content' && input.length > MAX_CONTENT_LENGTH) {
-    return { 
-      valid: false, 
-      error: `Content exceeds ${limits.label} Tier limit (${Math.round(input.length/1000)}k/${Math.round(MAX_CONTENT_LENGTH/1000)}k chars). Upgrade for more capacity.` 
+    return {
+      valid: false,
+      error: `Content exceeds ${limits.label} Tier limit (${Math.round(input.length / 1000)}k/${Math.round(MAX_CONTENT_LENGTH / 1000)}k chars). Upgrade for more capacity.`
     };
   }
 

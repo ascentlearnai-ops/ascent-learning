@@ -423,10 +423,10 @@ const App: React.FC = () => {
 
         <div className="p-4 border-t border-white/5 mt-auto bg-[#050505]">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900/30 border border-white/5 mb-3">
-            <div className={`w-8 h-8 rounded-full shadow-lg ring-2 ring-black bg-gradient-to-tr ${userTier === 'Scholar' ? 'from-purple-600 to-primary-600' : 'from-zinc-600 to-zinc-400'}`}></div>
+            <div className={`w-8 h-8 rounded-full shadow-lg ring-2 ring-black bg-gradient-to-tr ${userTier === 'Admin' ? 'from-red-600 to-red-900' : userTier === 'Scholar' ? 'from-purple-600 to-primary-600' : 'from-zinc-600 to-zinc-400'}`}></div>
             <div className="flex-1 min-w-0">
               <div className="font-bold text-sm text-white truncate">
-                {userTier === 'Scholar' ? 'Scholar Client' : 'Initiate'}
+                {userTier === 'Admin' ? 'Administrator' : userTier === 'Scholar' ? 'Scholar Client' : 'Initiate'}
               </div>
               <div className="text-[10px] text-primary-400 font-mono tracking-wider flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> ONLINE
@@ -434,7 +434,7 @@ const App: React.FC = () => {
             </div>
             <Shield size={14} className="text-zinc-600" />
           </div>
-          {userTier !== 'Scholar' && (
+          {(userTier !== 'Scholar' && userTier !== 'Admin') && (
             <a href="/#pricing" className="mb-3 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-primary-400 hover:text-primary-300 hover:bg-primary-500/10 transition-colors border border-primary-500/20">
               <Zap size={12} /> Upgrade to Scholar
             </a>
