@@ -26,8 +26,21 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
   const [dragActive, setDragActive] = useState(false);
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [countdown, setCountdown] = useState(45);
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (processingStep !== 'idle' && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => Math.max(0, prev - 1));
+      }, 1000);
+    } else if (processingStep === 'idle') {
+      setCountdown(45);
+    }
+    return () => clearInterval(timer);
+  }, [processingStep, countdown]);
 
   useEffect(() => {
     return () => {
@@ -266,9 +279,39 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
         )}
         <div className="p-6 bg-[#080808]">
           {isProcessing ? (
-            <div className="flex flex-col items-center py-12">
-              <Loader2 size={48} className="text-primary-500 animate-spin" />
-              <p className="mt-4 text-zinc-400">{processingStep.replace('_', ' ')}</p>
+            <div className="flex flex-col items-center py-16 px-4 relative overflow-hidden rounded-2xl bg-zinc-950 border border-white/5 shadow-2xl">
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
+
+              <div className="relative flex justify-center items-center w-24 h-24 mb-8">
+                <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-primary-500/80 animate-spin" style={{ animationDuration: '2s' }}></div>
+                <div className="absolute inset-2 rounded-full border-b-2 border-l-2 border-zinc-500/50 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                <Brain size={36} className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] animate-pulse" />
+              </div>
+
+              <h4 className="text-2xl font-black text-white uppercase tracking-widest mb-3 font-mono drop-shadow-md">
+                Synthesizing Data
+              </h4>
+
+              <div className="flex items-center gap-3 mb-10">
+                <span className="text-primary-400 font-mono text-sm uppercase tracking-wider">
+                  {processingStep.replace('_', ' ')}
+                </span>
+                <span className="flex gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center bg-black/60 border border-white/10 px-8 py-5 rounded-2xl shadow-inner backdrop-blur-md">
+                <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-[0.2em] mb-2">Estimated Time</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white to-zinc-400">
+                    {String(Math.floor(countdown / 60)).padStart(2, '0')}:{String(countdown % 60).padStart(2, '0')}
+                  </span>
+                  <span className="text-sm font-bold text-zinc-500 font-mono">s</span>
+                </div>
+              </div>
             </div>
           ) : (
             <>
