@@ -6,7 +6,7 @@ import { QuizQuestion } from '../types';
 import { getUserTier } from '../utils/security';
 import { GenerationLoaderModal } from './GenerationLoaderModal';
 
-const SATPrep: React.FC = () => {
+const SATPrep: React.FC<{ userTier: string }> = ({ userTier }) => {
   const [activeTab, setActiveTab] = useState<'practice' | 'topics' | 'full-exam'>('practice');
   const [isAllowed, setIsAllowed] = useState(true);
 
@@ -14,12 +14,13 @@ const SATPrep: React.FC = () => {
   const [activePracticeSession, setActivePracticeSession] = useState<{ type: 'MATH' | 'READING_WRITING', questions: QuizQuestion[] } | null>(null);
 
   useEffect(() => {
-    const tier = getUserTier();
     // Block SAT Prep for 'Initiate' tier entirely
-    if (tier === 'Initiate') {
+    if (userTier === 'Initiate') {
       setIsAllowed(false);
+    } else {
+      setIsAllowed(true);
     }
-  }, []);
+  }, [userTier]);
 
   if (!isAllowed) {
     return (
@@ -62,7 +63,6 @@ const SATPrep: React.FC = () => {
         {activeTab === 'full-exam' && <FullExamInterface />}
       </div>
 
-      {/* Practice Session Overlay (Modal) */}
       {activePracticeSession && (
         <PracticeSessionOverlay
           questions={activePracticeSession.questions}
@@ -70,8 +70,12 @@ const SATPrep: React.FC = () => {
           onClose={() => setActivePracticeSession(null)}
           onRegenerate={async () => {
             // Quick regen handler passed to overlay
-            const newQs = await generateSATQuestions(20, activePracticeSession.type);
-            setActivePracticeSession({ type: activePracticeSession.type, questions: newQs });
+            const newQs = await generateSATQuestions(10, activePracticeSession.type);
+            if (newQs && newQs.length > 0) {
+              setActivePracticeSession({ type: activePracticeSession.type, questions: newQs });
+            } else {
+              alert("Generation failed to produce valid questions. Please try again.");
+            }
           }}
         />
       )}
@@ -120,11 +124,14 @@ const GeneratorCard = ({ type, title, desc, icon, onGenerate }: { type: 'MATH' |
   const generate = async () => {
     setLoading(true);
     try {
-      const qs = await generateSATQuestions(20, type);
+      const qs = await generateSATQuestions(10, type);
+      if (!qs || qs.length === 0) {
+        throw new Error("Generation produced empty response");
+      }
       onGenerate(type, qs);
     } catch (e) {
       console.error(e);
-      alert("Generation failed. Please try again.");
+      alert("Generation failed to produce valid questions. Please try again.");
     } finally {
       setLoading(false);
     }

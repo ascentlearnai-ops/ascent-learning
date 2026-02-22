@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, RotateCcw, CheckCircle, Calendar } from 'lucide-react';
+import { Sparkles, ArrowRight, RotateCcw, CheckCircle, Calendar, Plus } from 'lucide-react';
 import { CalendarEvent } from '../types';
 import { generateWeeklyPlan } from '../services/aiService';
 
 const DAY_MAP: Record<string, 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun'> = {
   monday: 'Mon', mon: 'Mon', tuesday: 'Tue', tue: 'Tue', wednesday: 'Wed', wed: 'Wed',
   thursday: 'Thu', thu: 'Thu', friday: 'Fri', fri: 'Fri', saturday: 'Sat', sat: 'Sat',
-  sunday: 'Sun', sun: 'Sun'
+  sunday: 'Sun', sun: 'Sun',
+  today: new Date().toLocaleDateString('en-US', { weekday: 'short' }) as any,
+  tomorrow: new Date(Date.now() + 86400000).toLocaleDateString('en-US', { weekday: 'short' }) as any
+};
+
+const formatTime12hr = (time24: string) => {
+  const [h, m] = time24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
 };
 
 function weeklyPlanToCalendarEvents(plan: Array<{ day: string; tasks: any[] }>): CalendarEvent[] {
@@ -70,7 +79,10 @@ const StrategicPlanner: React.FC<StrategicPlannerProps> = ({ weeklyEvents, setWe
     setError('');
     setPreviewEvents(null);
     try {
-      const plan = await generateWeeklyPlan([goal.trim()]);
+      const plan = await generateWeeklyPlan([
+        goal.trim(),
+        `IMPORTANT: Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}. If the user asks for 'today' or 'tomorrow', use the correct day of the week.`
+      ]);
       const events = weeklyPlanToCalendarEvents(plan);
       setPreviewEvents(events);
       // Wait for user confirmation before calling setWeeklyEvents
@@ -158,7 +170,21 @@ const StrategicPlanner: React.FC<StrategicPlannerProps> = ({ weeklyEvents, setWe
                 </div>
                 <div className="flex items-center gap-3 text-xs font-mono text-zinc-500 mt-2 sm:mt-0">
                   <span className="font-bold text-primary-400 uppercase tracking-widest">{evt.day}</span>
-                  <span>{evt.startTime} - {evt.endTime}</span>
+                  <span>{formatTime12hr(evt.startTime)} - {formatTime12hr(evt.endTime)}</span>
+                  <button
+                    onClick={() => {
+                      setWeeklyEvents(prev => [...prev, evt]);
+                      setPreviewEvents(prev => prev!.filter(e => e.id !== evt.id));
+                      if (previewEvents && previewEvents.length === 1) {
+                        setSuccess(true);
+                        setGoal('');
+                      }
+                    }}
+                    className="p-1 hover:bg-white/10 rounded text-primary-400 border border-primary-500/20"
+                    title="Add this event only"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
               </div>
             ))}
@@ -166,14 +192,14 @@ const StrategicPlanner: React.FC<StrategicPlannerProps> = ({ weeklyEvents, setWe
           <div className="flex gap-4 pt-4 border-t border-white/5 mt-4">
             <button
               onClick={() => {
-                setWeeklyEvents(previewEvents);
+                setWeeklyEvents(prev => [...prev, ...previewEvents]);
                 setSuccess(true);
                 setGoal('');
                 setPreviewEvents(null);
               }}
               className="flex-1 bg-primary-600 hover:bg-primary-500 text-white py-3 rounded-xl font-bold transition-all"
             >
-              Confirm & Add to Calendar
+              Add All to Calendar
             </button>
             <button
               onClick={() => setPreviewEvents(null)}

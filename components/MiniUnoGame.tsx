@@ -55,7 +55,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 } else {
                     drawCard(false);
                 }
-            }, 600);
+            }, 1500);
             return () => clearTimeout(timer);
         }
     }, [turn, botHand, discardPile, currentColor, deck]);
@@ -179,8 +179,8 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in font-sans">
-            <div className="absolute top-6 right-6 flex gap-4">
+        <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in font-sans overflow-y-auto min-h-screen">
+            <div className="absolute top-6 right-6 flex gap-4 pr-4">
                 <button onClick={startNewGame} className="p-2 text-zinc-400 hover:text-white transition-colors bg-white/5 rounded-full"><RefreshCw size={24} /></button>
                 <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white transition-colors bg-white/5 rounded-full"><X size={24} /></button>
             </div>
@@ -190,10 +190,10 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-xs font-mono text-zinc-300 font-bold uppercase tracking-widest">{message}</div>
             </div>
 
-            <div className="flex-1 w-full max-w-4xl flex flex-col items-center justify-between">
+            <div className="flex-1 w-full max-w-4xl flex flex-col items-center justify-center min-h-[500px] mt-16 mb-8">
 
                 {/* Bot Hand Area */}
-                <div className="w-full flex justify-center items-center gap-1 sm:gap-2 mb-4 h-28 relative">
+                <div className="w-full flex justify-center items-center gap-1 sm:gap-2 mb-8 h-28 relative pt-4">
                     <div className="absolute -top-4 text-[10px] text-zinc-500 font-mono tracking-widest uppercase font-bold">Neural Opponent - {botHand.length} Cards</div>
                     {botHand.map((c, i) => (
                         <div key={i} className="-ml-6 w-14 h-20 sm:w-16 sm:h-24 rounded-lg bg-gradient-to-br from-zinc-800 to-black border-2 border-white/10 flex items-center justify-center shadow-lg relative overflow-hidden first:ml-0 shrink-0">
@@ -235,7 +235,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             const textColor = currentColor === 'yellow' ? '#b45309' : currentColor === 'red' ? '#b91c1c' : currentColor === 'blue' ? '#1d4ed8' : currentColor === 'green' ? '#15803d' : '#000';
 
                             return (
-                                <div className={`w-32 h-48 rounded-2xl border-[3px] border-white/40 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden text-white font-black text-4xl shadow-[0_0_40px_rgba(0,0,0,0.6)] ${displayColorClass}`}>
+                                <div key={discardPile.length} className={`w-32 h-48 rounded-2xl border-[3px] border-white/40 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden text-white font-black text-4xl shadow-[0_0_40px_rgba(0,0,0,0.6)] animate-in zoom-in duration-300 ${displayColorClass}`}>
                                     <div className="absolute top-2 left-3 text-lg drop-shadow-md">{displayNumber}</div>
                                     <div className="absolute bottom-2 right-3 text-lg rotate-180 drop-shadow-md">{displayNumber}</div>
 
@@ -251,7 +251,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 </div>
 
                 {/* Player Hand Area */}
-                <div className="w-full flex justify-center items-end gap-1 sm:gap-2 mt-4 sm:mt-8 h-48 relative overflow-x-auto pb-6 px-4 custom-scrollbar">
+                <div className="w-full flex justify-center items-end gap-1 sm:gap-2 mt-4 sm:mt-8 h-48 py-4 relative overflow-x-auto custom-scrollbar">
                     <div className="absolute top-0 text-[10px] text-zinc-400 font-mono tracking-widest uppercase font-bold">Your Hand</div>
                     {playerHand.map((card, i) => {
                         const valid = isValidPlay(card);

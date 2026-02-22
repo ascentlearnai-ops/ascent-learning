@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, FileText, Plus, Home, LogOut, Shield, Zap, Clock, Sparkles, GraduationCap, Target, Calendar, X, RotateCw } from 'lucide-react';
+import { Layout, Menu, FileText, Plus, Home, LogOut, Shield, Zap, Clock, Sparkles, GraduationCap, Target, Calendar, X, RotateCw, Trash2 } from 'lucide-react';
 import { Resource, StudyTask, CalendarEvent } from '../types';
 import Dashboard from './Dashboard';
 import NeuralTimer from './NeuralTimer';
@@ -18,6 +18,7 @@ import { getResources } from '../services/mockDb';
 import { getUserTier, unlockSession, initIdleMonitor, setMemoryTier } from '../utils/security';
 import { supabase } from '../lib/supabase';
 import { fetchUserTier } from '../services/supabaseDb';
+import { deleteResource } from '../services/mockDb';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -226,6 +227,15 @@ const App: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleDeleteResource = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    await deleteResource(id);
+    refreshResources();
+    if (resourceViewId === id) {
+      handleHomeClick();
+    }
+  };
+
   const handleViewChange = (view: typeof currentView) => {
     setCurrentView(view);
     setResourceViewId(null);
@@ -308,7 +318,7 @@ const App: React.FC = () => {
         content = <APCenter onExamReady={handleExamReady} />;
         break;
       case 'sat-prep':
-        content = <SATPrep />;
+        content = <SATPrep userTier={userTier} />;
         break;
       case 'admin':
         if (userTier === 'Admin') {
@@ -446,6 +456,7 @@ const App: React.FC = () => {
                 label={res.title}
                 active={resourceViewId === res.id}
                 onClick={() => handleResourceClick(res.id)}
+                onDelete={(e: React.MouseEvent) => handleDeleteResource(res.id, e)}
               />
             ))}
           </div>
@@ -555,21 +566,30 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-const NavItem = ({ icon, label, active, onClick }: any) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 mb-1 group relative overflow-hidden ${active
-      ? 'bg-primary-600/10 text-white shadow-lg'
-      : 'text-zinc-500 hover:text-white hover:bg-white/5'
-      }`}
-  >
-    {active && (
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-full"></div>
+const NavItem = ({ icon, label, active, onClick, onDelete }: any) => (
+  <div className="relative group w-full mb-1">
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden ${active
+        ? 'bg-primary-600/10 text-white shadow-lg'
+        : 'text-zinc-500 hover:text-white hover:bg-white/5'
+        }`}
+    >
+      {active && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-full"></div>
+      )}
+      <span className={`transition-colors duration-300 ${active ? 'text-primary-400' : 'group-hover:text-zinc-300'}`}>{icon}</span>
+      <span className={`truncate relative z-10 w-full text-left ${onDelete ? 'pr-6' : ''}`}>{label}</span>
+    </button>
+    {onDelete && (
+      <button
+        onClick={onDelete}
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <Trash2 size={14} />
+      </button>
     )}
-    <span className={`transition-colors duration-300 ${active ? 'text-primary-400' : 'group-hover:text-zinc-300'}`}>{icon}</span>
-    <span className="truncate relative z-10">{label}</span>
-  </button>
+  </div>
 );
 
 const TopNavLink = ({ active, onClick, label, icon }: any) => (

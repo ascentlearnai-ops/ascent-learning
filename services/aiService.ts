@@ -62,12 +62,12 @@ const callDeepSeek = async (
   attemptFallback: boolean = true
 ): Promise<string> => {
   try {
-    // Append a forceful speed constraint to the latest user message
+    // Append a forceful speed constraint and readability constraint to the latest user message
     const speedOptimizedMessages = messages.map((m, i) => {
       if (i === messages.length - 1 && m.role === 'user') {
         return {
           ...m,
-          content: m.content + "\n\nCRITICAL SPEED LIMIT: Keep your internal reasoning extremely concise (under 50 words). Maximize generation speed and output the final response immediately. Do not over-explain."
+          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your internal reasoning extremely concise (under 50 words). Maximize generation speed and output the final response immediately. Do not over-explain.\n2. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
         };
       }
       return m;
