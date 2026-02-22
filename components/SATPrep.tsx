@@ -70,7 +70,7 @@ const SATPrep: React.FC<{ userTier: string }> = ({ userTier }) => {
           onClose={() => setActivePracticeSession(null)}
           onRegenerate={async () => {
             // Quick regen handler passed to overlay
-            const newQs = await generateSATQuestions(10, activePracticeSession.type);
+            const newQs = await generateSATQuestions(5, activePracticeSession.type);
             if (newQs && newQs.length > 0) {
               setActivePracticeSession({ type: activePracticeSession.type, questions: newQs });
             } else {
@@ -124,7 +124,7 @@ const GeneratorCard = ({ type, title, desc, icon, onGenerate }: { type: 'MATH' |
   const generate = async () => {
     setLoading(true);
     try {
-      const qs = await generateSATQuestions(10, type);
+      const qs = await generateSATQuestions(5, type);
       if (!qs || qs.length === 0) {
         throw new Error("Generation produced empty response");
       }
@@ -596,8 +596,8 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
   }, 0);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-6 animate-fade-in">
-      <div className="w-full max-w-6xl h-[90vh] bg-[#0a0a0a] border border-white/10 rounded-2xl flex flex-col relative overflow-hidden shadow-2xl animate-scale-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
+      <div className="w-full max-w-7xl h-[95vh] bg-[#0a0a0a] border border-white/10 rounded-2xl flex flex-col relative overflow-hidden shadow-2xl animate-scale-in">
         {/* Header */}
         <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-[#0d0d0d] shrink-0">
           <div className="flex items-center gap-4">
@@ -649,7 +649,7 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
               </div>
             </div>
           ) : tab === 'study' ? (
-            <div className="max-w-3xl mx-auto" dangerouslySetInnerHTML={{ __html: styledLesson }} />
+            <div className="max-w-4xl mx-auto" dangerouslySetInnerHTML={{ __html: styledLesson }} />
           ) : (
             // QUIZ TAB
             <div className="h-full flex flex-col relative">
@@ -806,15 +806,145 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
 
 // --- Full Exam Placeholder ---
 const FullExamInterface = () => {
-  return (
-    <div className="flex flex-col items-center justify-center h-[500px] text-center bg-[#0A0A0A] border border-white/5 rounded-3xl p-10">
-      <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center mb-6">
-        <Lock size={32} className="text-zinc-600" />
+  const [loading, setLoading] = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<{ [key: string]: string | number }>({});
+  const [showResults, setShowResults] = useState(false);
+  const [examType, setExamType] = useState<'MATH' | 'READING_WRITING' | null>(null);
+
+  const startExam = async (type: 'MATH' | 'READING_WRITING') => {
+    setExamType(type);
+    setLoading(true);
+    setQuestions([]);
+    setCurrentIndex(0);
+    setAnswers({});
+    setShowResults(false);
+    try {
+      const qs = await generateSATQuestions(5, type);
+      if (!qs || qs.length === 0) throw new Error("No questions generated");
+      setQuestions(qs);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate exam questions. Try again.");
+      setExamType(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const score = questions.reduce((acc, q) => {
+    if (q.type === 'text') {
+      const uVal = (answers[q.id] as string || "").toLowerCase().replace(/\s/g, '');
+      const cVal = (q.correctAnswerText || "").toLowerCase().replace(/\s/g, '');
+      if (!isNaN(parseFloat(uVal)) && !isNaN(parseFloat(cVal)) && Math.abs(parseFloat(uVal) - parseFloat(cVal)) < 0.001) return acc + 1;
+      return acc + (uVal === cVal ? 1 : 0);
+    }
+    return acc + (answers[q.id] === q.correctAnswer ? 1 : 0);
+  }, 0);
+
+  if (loading) {
+    return <GenerationLoaderModal isOpen={true} onClose={() => setLoading(false)} title="Building Full Exam" subtitle="Assembling Comprehensive Assessment" />;
+  }
+
+  if (questions.length > 0 && !showResults) {
+    const currentQ = questions[currentIndex];
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#050505] flex flex-col">
+        <div className="h-16 border-b border-white/5 bg-[#0a0a0a] flex items-center justify-between px-8 shrink-0">
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Full Simulation — {examType === 'MATH' ? 'Math' : 'Reading & Writing'}</span>
+          </div>
+          <div className="flex items-center gap-6">
+            <span className="text-xs font-mono text-zinc-400">Question {currentIndex + 1} of {questions.length}</span>
+            <button onClick={() => { setQuestions([]); setExamType(null); }} className="p-2 rounded-xl hover:bg-white/5 text-zinc-400 hover:text-white transition-colors"><X size={20} /></button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 flex items-start justify-center">
+          <div className="w-full max-w-3xl space-y-8">
+            {currentQ.passage && (
+              <div className="bg-zinc-900/30 p-8 rounded-2xl border border-white/5">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Reading Passage</div>
+                <p className="font-serif text-lg leading-loose text-zinc-300 whitespace-pre-wrap">{currentQ.passage}</p>
+              </div>
+            )}
+            <h2 className="text-2xl font-medium text-white leading-relaxed">{currentQ.question}</h2>
+            <div className="grid gap-3">
+              {currentQ.options.map((opt, i) => (
+                <button key={i} onClick={() => setAnswers({ ...answers, [currentQ.id]: i })}
+                  className={`w-full text-left p-5 rounded-xl border transition-all flex items-center gap-5 group ${answers[currentQ.id] === i ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-zinc-900/30 border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-700'}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold flex-shrink-0 ${answers[currentQ.id] === i ? 'bg-white text-black border-white' : 'border-zinc-700'}`}>
+                    {String.fromCharCode(65 + i)}
+                  </div>
+                  <span className="text-base font-medium">{opt}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="h-20 border-t border-white/5 bg-[#0a0a0a] flex items-center justify-between px-8 shrink-0">
+          <button onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))} disabled={currentIndex === 0}
+            className="px-6 py-3 rounded-full border border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-0 transition-all text-sm font-bold uppercase tracking-wide"
+          >Back</button>
+          {currentIndex < questions.length - 1 ? (
+            <button onClick={() => setCurrentIndex(prev => prev + 1)} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:scale-105 transition-all text-sm">Next</button>
+          ) : (
+            <button onClick={() => setShowResults(true)} className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-full hover:bg-indigo-500 shadow-lg transition-all text-sm">Submit Exam</button>
+          )}
+        </div>
       </div>
-      <h3 className="text-2xl font-bold text-white mb-2">Full Simulation Locked</h3>
-      <p className="text-zinc-500 max-w-md">The full-length 2.5 hour adaptive simulation requires Scholar Clearance. Please upgrade to access this module.</p>
+    );
+  }
+
+  if (showResults) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-[#050505] flex flex-col items-center justify-center p-8">
+        <div className="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-6">
+          <Trophy size={40} />
+        </div>
+        <h2 className="text-4xl font-bold text-white mb-2">Exam Complete</h2>
+        <p className="text-zinc-400 text-lg mb-8">Score: {Math.round((score / questions.length) * 100)}% ({score}/{questions.length})</p>
+        <div className="w-full max-w-2xl space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar mb-8">
+          {questions.map((q, idx) => {
+            const isCorrect = answers[q.id] === q.correctAnswer;
+            return (
+              <div key={idx} className={`p-5 rounded-xl border ${isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+                <p className="text-white font-medium mb-2">{idx + 1}. {q.question}</p>
+                <p className="text-sm text-zinc-400">{q.explanation}</p>
+              </div>
+            );
+          })}
+        </div>
+        <button onClick={() => { setQuestions([]); setExamType(null); setShowResults(false); }} className="px-8 py-3 bg-white text-black font-bold rounded-full hover:scale-105 transition-all">Back to Menu</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid md:grid-cols-2 gap-8">
+      <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-10 flex flex-col items-center justify-center text-center min-h-[400px] hover:border-white/10 transition-colors">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-t-3xl"></div>
+        <div className="w-24 h-24 rounded-3xl bg-blue-900/10 text-blue-400 flex items-center justify-center mb-8"><Calculator size={32} /></div>
+        <h3 className="text-3xl font-bold text-white mb-4">SAT Math Exam</h3>
+        <p className="text-zinc-400 max-w-sm mb-8">Full simulation covering Algebra, Advanced Math, Data Analysis, and Geometry.</p>
+        <button onClick={() => startExam('MATH')} className="px-8 py-4 bg-white text-black font-bold rounded-full shadow-lg hover:scale-105 transition-all flex items-center gap-3 text-sm">
+          <Play size={16} fill="currentColor" /> START EXAM
+        </button>
+      </div>
+      <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-10 flex flex-col items-center justify-center text-center min-h-[400px] hover:border-white/10 transition-colors">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-600 to-pink-400 rounded-t-3xl"></div>
+        <div className="w-24 h-24 rounded-3xl bg-purple-900/10 text-purple-400 flex items-center justify-center mb-8"><PenTool size={32} /></div>
+        <h3 className="text-3xl font-bold text-white mb-4">Reading & Writing Exam</h3>
+        <p className="text-zinc-400 max-w-sm mb-8">Full simulation covering Craft & Structure, Information & Ideas, and Conventions.</p>
+        <button onClick={() => startExam('READING_WRITING')} className="px-8 py-4 bg-white text-black font-bold rounded-full shadow-lg hover:scale-105 transition-all flex items-center gap-3 text-sm">
+          <Play size={16} fill="currentColor" /> START EXAM
+        </button>
+      </div>
     </div>
-  )
+  );
 }
 
 const DomainCard: React.FC<{ domain: SATDomain; onSkillSelect: (s: SATSkill) => void | Promise<void>; accent?: 'blue' | 'purple' }> = ({ domain, onSkillSelect, accent = 'blue' }) => {

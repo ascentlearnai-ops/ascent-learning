@@ -74,7 +74,7 @@ const callDeepSeek = async (
     });
 
     // Cap the maximum tokens to force faster termination even if reasoning loops
-    const safeMaxTokens = Math.min(maxTokens, 4000);
+    const safeMaxTokens = Math.min(maxTokens, 8000);
 
     const response = await axios.post(
       "/api/generate",
@@ -138,6 +138,30 @@ const parseAIResponse = (text: string | undefined): any => {
       try {
         return JSON.parse(sanitized);
       } catch (e) {
+        // Attempt to fix truncated JSON by closing brackets
+        let fixed = sanitized;
+        const openBrackets = (fixed.match(/\[/g) || []).length;
+        const closeBrackets = (fixed.match(/\]/g) || []).length;
+        const openBraces = (fixed.match(/\{/g) || []).length;
+        const closeBraces = (fixed.match(/\}/g) || []).length;
+
+        // Try to find last complete object and close the array
+        if (openBrackets > closeBrackets) {
+          // Find the last complete object (ending with })
+          const lastCompleteObj = fixed.lastIndexOf('}');
+          if (lastCompleteObj > 0) {
+            fixed = fixed.substring(0, lastCompleteObj + 1);
+            // Remove trailing comma if present
+            fixed = fixed.replace(/,\s*$/, '');
+            // Close remaining brackets
+            for (let i = 0; i < openBrackets - closeBrackets; i++) fixed += ']';
+            try {
+              return JSON.parse(fixed);
+            } catch (e2) {
+              console.warn("Truncated JSON fix attempt failed");
+            }
+          }
+        }
         console.warn("Regex json parsing failed, trying raw...");
       }
     }
