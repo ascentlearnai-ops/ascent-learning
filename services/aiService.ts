@@ -54,9 +54,6 @@ const setCachedResponse = (key: string, data: any) => {
   }
 };
 
-// Global queue to prevent concurrent rate limits on free models
-let requestQueue = Promise.resolve();
-
 // Call OpenRouter API
 const callDeepSeek = async (
   messages: Array<{ role: string; content: string }>,
@@ -64,74 +61,64 @@ const callDeepSeek = async (
   maxTokens: number = 4000,
   attemptFallback: boolean = true
 ): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    requestQueue = requestQueue.then(async () => {
-      // 500ms delay between exact consecutive API calls to relieve strict rate limit bounds without causing massive lag
-      await new Promise(res => setTimeout(res, 500));
-      try {
-        // Append a forceful speed constraint and readability constraint to the latest user message
-        const speedOptimizedMessages = messages.map((m, i) => {
-          if (i === messages.length - 1 && m.role === 'user') {
-            return {
-              ...m,
-              content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your output clean and strictly follow the JSON or HTML format requested.\n2. Do NOT output markdown code blocks formatting (e.g. ```json), just output the raw parsed struct.\n3. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
-            };
-          }
-          return m;
-        });
-
-        // Cap the maximum tokens to force faster termination even if reasoning loops
-        const safeMaxTokens = Math.min(maxTokens, 4000);
-
-        const response = await axios.post(
-          "/api/generate",
-          {
-            model: currentModel,
-            messages: speedOptimizedMessages,
-            temperature: temperature,
-            max_tokens: safeMaxTokens,
-          }
-        );
-
-        if (response.data && response.data.choices && response.data.choices.length > 0) {
-          console.log(`✓ Generated with OpenRouter (${currentModel})`);
-          resolve(response.data.choices[0].message.content);
-        } else {
-          reject(new Error("Empty response from AI generation."));
-        }
-      } catch (error: any) {
-        const errorText = error.response?.data?.error?.message || error.response?.data?.error || error.message || "";
-        console.error(`OpenRouter API Error with ${currentModel}:`, errorText);
-
-        if (attemptFallback && currentModel === MODELS.primary) {
-          console.log("Primary model failed, trying fallback model...");
-          currentModel = MODELS.fallback;
-          try {
-            const fallbackRes = await callDeepSeek(messages, temperature, maxTokens, false);
-            resolve(fallbackRes);
-            return;
-          } catch (fallbackErr) {
-            reject(fallbackErr);
-            return;
-          }
-        }
-
-        let userMessage = "AI generation failed. ";
-        if (typeof errorText === 'string') {
-          if (errorText.includes("Invalid key") || errorText.includes("401")) {
-            userMessage = "Invalid API key. Please check your variables.";
-          } else if (errorText.includes("429") || errorText.includes("quota")) {
-            userMessage = "Rate limit exceeded. Please wait a moment and try again.";
-          } else {
-            userMessage = `API error: ${errorText}`;
-          }
-        } else {
-          userMessage = `API error: ${JSON.stringify(errorText)}`;
-        }
-        reject(new Error(userMessage));
+  try {
+    // Append a forceful speed constraint and readability constraint to the latest user message
+    const speedOptimizedMessages = messages.map((m, i) => {
+      if (i === messages.length - 1 && m.role === 'user') {
+        return {
+          ...m,
+          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your output clean and strictly follow the JSON or HTML format requested.\n2. Do NOT output markdown code blocks formatting (e.g. ```json), just output the raw parsed struct.\n3. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
+        };
       }
-    }).catch(err => reject(err));
-  });
+      return m;
+    });
+
+    // Cap the maximum tokens to force faster termination even if reasoning loops
+    const safeMaxTokens = Math.min(maxTokens, 4000);
+
+    const response = await axios.post(
+      "/api/generate",
+      {
+        model: currentModel,
+        messages: speedOptimizedMessages,
+        temperature: temperature,
+        max_tokens: safeMaxTokens,
+      },
+      { timeout: 60000 } // 60 second hard timeout — prevents infinite hangs
+    );
+
+    if (response.data && response.data.choices && response.data.choices.length > 0) {
+      console.log(`✓ Generated with OpenRouter (${currentModel})`);
+      return response.data.choices[0].message.content;
+    } else {
+      throw new Error("Empty response from AI generation.");
+    }
+  } catch (error: any) {
+    const errorText = error.response?.data?.error?.message || error.response?.data?.error || error.message || "";
+    console.error(`OpenRouter API Error with ${currentModel}:`, errorText);
+
+    if (attemptFallback && currentModel === MODELS.primary) {
+      console.log("Primary model failed, trying fallback model...");
+      currentModel = MODELS.fallback;
+      return await callDeepSeek(messages, temperature, maxTokens, false);
+    }
+
+    let userMessage = "AI generation failed. ";
+    if (typeof errorText === 'string') {
+      if (errorText.includes("Invalid key") || errorText.includes("401")) {
+        userMessage = "Invalid API key. Please check your variables.";
+      } else if (errorText.includes("429") || errorText.includes("quota")) {
+        userMessage = "Rate limit exceeded. Please wait a moment and try again.";
+      } else if (errorText.includes("timeout") || error.code === 'ECONNABORTED') {
+        userMessage = "Generation timed out. Please try again.";
+      } else {
+        userMessage = `API error: ${errorText}`;
+      }
+    } else {
+      userMessage = `API error: ${JSON.stringify(errorText)}`;
+    }
+    throw new Error(userMessage);
+  }
 };
 
 // Parse AI JSON responses
@@ -190,7 +177,7 @@ const smartGenerate = async <T>(
     if (cached !== null) return cached;
   }
 
-  const maxAttempts = 3;
+  const maxAttempts = 2;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {

@@ -12,10 +12,10 @@ if (redisURL && redisToken) {
         url: redisURL,
         token: redisToken,
     });
-    // 50 requests per 10 seconds per IP or User to prevent 429
+    // 200 requests per 60 seconds per IP — generous enough for parallel generation (summary+flashcards+quiz)
     ratelimit = new Ratelimit({
         redis: redis,
-        limiter: Ratelimit.slidingWindow(50, "10 s"),
+        limiter: Ratelimit.slidingWindow(200, "60 s"),
     });
 }
 
