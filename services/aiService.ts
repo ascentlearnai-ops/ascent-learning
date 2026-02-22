@@ -183,10 +183,18 @@ const cleanHtml = (text: string | undefined): string => {
     .replace(/```\n?/g, '')
     .trim();
 
+  // Strip any text before the first HTML tag
   const firstTagIndex = cleaned.indexOf('<');
   if (firstTagIndex > 0) {
     cleaned = cleaned.substring(firstTagIndex);
   }
+
+  // Also strip trailing non-HTML after last closing tag
+  const lastTagIndex = cleaned.lastIndexOf('>');
+  if (lastTagIndex > 0 && lastTagIndex < cleaned.length - 1) {
+    cleaned = cleaned.substring(0, lastTagIndex + 1);
+  }
+
   return cleaned;
 };
 
@@ -666,28 +674,35 @@ export const generateSATLesson = async (skillContext: string): Promise<string> =
   const cacheKey = getCacheKey('sat_lesson', skillContext);
 
   return smartGenerate(async () => {
-    const prompt = `Create a massive, exhaustively detailed, top-tier SAT prep lesson on: ${skillContext}
+    const prompt = `Write a comprehensive SAT prep study guide for: ${skillContext}
 
-Target Length: 2000-3000 words. Absolutely do not make it short.
-Format as HTML with:
-- <h2>Concept Overview</h2>
-- <h2>Official SAT Rules & Mechanics</h2>
-- <h2>Step-by-Step Strategy</h2>
-- <h2>Common Traps</h2>
-- <h2>Advanced Edge-Cases</h2>
+Output ONLY valid HTML starting immediately with <h2>. No preamble, no meta-commentary, no repeated instructions.
 
-Use interactive terms: <span class="interactive-term" data-def="definition">Term</span>
-WRITING STANDARDS:
-- MAXIMUM REASONING DEPTH: Break down problem solving steps logically with clear tutor-like accuracy.
-- Explain all rigorous topics thoroughly but in clear language.
-- Keep it cleanly formatted, with numbered steps if applicable.
-- Make the lesson highly comprehensive, filling in all edge case logic and test strategies.
+Structure:
+<h2>Concept Overview</h2>
+<p>[what this skill is and why it appears on the SAT]</p>
 
-Output pure HTML only, no markdown.`;
+<h2>Official SAT Rules & Mechanics</h2>
+<p>[specific rules, formulas, or patterns the SAT tests]</p>
+
+<h2>Step-by-Step Strategy</h2>
+<ol><li>[step 1]</li><li>[step 2]</li>...</ol>
+
+<h2>Common Traps & Mistakes</h2>
+<ul><li>[trap 1]</li><li>[trap 2]</li></ul>
+
+<h2>Advanced Edge Cases</h2>
+<p>[harder variations or exceptions]</p>
+
+<h2>Practice Tips</h2>
+<p>[how to get better at this specific skill]</p>
+
+Wrap key terms in: <span class="interactive-term" data-def="concise definition">Term</span>
+Use <strong> for important concepts. Be thorough and specific to SAT content. Output ONLY HTML.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.3, 8000);
+    ], 0.3, 6000);
 
     return cleanHtml(response) || "<h2>Error generating lesson</h2>";
   }, cacheKey);
@@ -700,186 +715,52 @@ export const generateSATQuestions = async (
   context?: string,
   difficulty?: 'easy' | 'hard' | 'adaptive'
 ): Promise<QuizQuestion[]> => {
-  const cacheKey = getCacheKey(`sat_${type}_${count} `, context || 'gen');
+  const cacheKey = getCacheKey(`sat_${type}_${count}`, context || 'gen');
 
   return smartGenerate(async () => {
-    const typeDesc = type === 'MATH' ? 'SAT Math' : 'SAT Reading and Writing';
-    const diffDesc = difficulty || 'adaptive difficulty (mix of moderate and challenging)';
-    const contextDesc = context ? `DOMAIN FOCUS: ${context}.` : 'Cover diverse domains within the section. ';
-
-    const mathDomains = `
-MATH DOMAINS(distribute questions across):
-1. Algebra(linear equations, systems, inequalities, expressions)
-2. Advanced Math(quadratics, exponentials, polynomials, functions)
-3. Problem - Solving & Data Analysis(percentages, ratios, scatterplots, statistics)
-4. Geometry & Trigonometry(area, volume, circles, triangles, trig ratios)`;
-
-    const rwDomains = `
-READING & WRITING DOMAINS(distribute questions across):
-1. Craft and Structure(word choice, text structure, purpose, claims and evidence)
-2. Information and Ideas(central ideas, inferences, command of evidence)
-3. Standard English Conventions(grammar, punctuation, sentence structure)
-4. Expression of Ideas(transitions, concision, rhetorical synthesis)`;
-
-    const domains = type === 'MATH' ? mathDomains : rwDomains;
-
-    const passageRequirement = type === 'READING_WRITING'
-      ? `
-PASSAGE REQUIREMENT FOR READING & WRITING:
-Each question MUST include a 40 - 120 word passage in the "passage" field.
-Passage types: literary fiction excerpt, social science argument, historical document, scientific explanation, humanities analysis.
-Make passages authentic and substantive—not generic or artificially created.
-Questions should test comprehension, analysis, or conventions BASED on the passage.`
+    const typeDesc = type === 'MATH' ? 'SAT Math' : 'SAT Reading & Writing';
+    const contextLine = context ? `Focus on: ${context}.` : '';
+    const passageLine = type === 'READING_WRITING'
+      ? `Each question MUST include a "passage" field (60-100 words, authentic text excerpt). Questions must test comprehension, vocabulary, or grammar based on the passage.`
       : '';
+    const domainNote = type === 'MATH'
+      ? `Cover: algebra, advanced math, data analysis, geometry/trig.`
+      : `Cover: craft & structure, information & ideas, conventions, expression of ideas.`;
 
-    const mathSpecifics = type === 'MATH'
-      ? `
-MATH QUESTION TYPES:
-- Word problems requiring multi - step reasoning
-  - Interpreting graphs, tables, or data representations
-    - Applied algebra in real - world contexts
-      - Geometric reasoning with diagrams(if appropriate, provide a detailed description in "imagePrompt")
-- Function analysis and transformations
+    const formatExample = type === 'READING_WRITING'
+      ? `{"passage":"...","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}`
+      : `{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}`;
 
-MATH ANSWER CHOICES:
-- Use realistic numerical values and expressions
-  - Include common calculation errors as distractors
-    - Use algebraically similar expressions that differ in key details
-      - No obvious patterns(like "all whole numbers" or "ascending order")`
-      : '';
+    const prompt = `Generate exactly ${count} high-quality ${typeDesc} questions for the digital SAT (2024 format).
+${contextLine}
+${passageLine}
+${domainNote}
 
-    const rwSpecifics = type === 'READING_WRITING'
-      ? `
-READING & WRITING QUESTION TYPES:
-- "Which choice best states the main idea of the passage?"
-  - "As used in line X, 'word' most nearly means..."
-  - "Which choice provides the best evidence for the claim that..."
-  - "Which choice most effectively combines the sentences?"
-  - "Which choice completes the text with the most logical transition?"
+Rules:
+- 4 plausible answer choices; distractors from common student errors
+- correctAnswer: 0-based index (0=A, 1=B, 2=C, 3=D)
+- explanation: 2-3 sentences, why correct and why the main distractor is wrong
+- Use SAT phrasing: "Which choice best...", "What is the value of..."
 
-READING & WRITING ANSWER CHOICES:
-- All choices must be grammatically correct when testing conventions
-  - Use subtle meaning differences for vocabulary questions
-    - Make all transitions plausible for transition questions
-      - Use parallel structure and similar length across choices`
-      : '';
-
-    const prompt = `Generate ${count} official ${typeDesc} questions matching the digital SAT format(March 2024 +).
-  ${contextDesc}${domains}
-${passageRequirement}
-${mathSpecifics}
-${rwSpecifics}
-
-OFFICIAL SAT STANDARDS:
-These questions must be indistinguishable from real College Board SAT questions.
-  Reference: Official Digital SAT Practice, Khan Academy SAT, Bluebook practice tests.
-
-MAXIMUM REASONING DEPTH REQUIRED:
-- Prioritize extreme accuracy and tutor - level clarity. 
-- Break down explanations into structured, numbered step - by - step reasoning.
-- Verify final answers mathematically or logically before outputting.
-- Minimize any hallucinations by strictly adhering to official rules.
-
-QUESTION CONSTRUCTION:
-- Stem: Clear, concise, test - specific skills(20 - 50 words)
-  - Use official SAT phrasing: "Which choice best..." "Based on the text..." "What is the value of..."
-    - Include all necessary information(for math: values, constraints, relationships)
-- ${type === 'MATH' ? 'No calculator dependency unless specifically testing that skill' : 'Passage-based with specific line references when needed'}
-
-ANSWER CHOICES(A, B, C, D):
-- Parallel grammatical structure across all four choices
-  - Similar length(within 5 words of each other)
-    - Alphabetical or numerical ordering when applicable
-      - ${type === 'MATH' ? 'Numerical answers in ascending order; algebraic expressions by degree' : 'Complete sentences or parallel phrases'}
-- All four choices must be plausible to a student who understands 60 - 70 % of the concept
-
-DISTRACTOR CREATION(CRITICAL):
-Official SAT distractors are HARD.They must:
-- Result from common misunderstandings or calculation errors
-  - ${type === 'MATH' ? 'Come from arithmetic mistakes, sign errors, or formula misapplication' : 'Use words with similar meanings or slightly different emphasis'}
-- Be defensible if the student makes ONE specific error in reasoning
-  - Never be obviously absurd or out of scope
-
-${type === 'MATH' ? `
-MATH EXAMPLE:
-Question: "If 3x + 7 = 22, what is the value of 6x + 14?"
-A) 30  [error: solved for x, didn't double everything]
-B) 37  [error: doubled 22 instead of using correct relationship]
-C) 44  [CORRECT: 2(3x + 7) = 2(22) = 44]
-D) 51  [error: added instead of multiplied]` : `
-READING EXAMPLE:
-Passage: "The scientist's methodology was meticulous, involving repeated trials and systematic documentation..."
-Question: "As used in line X, 'word' most nearly means"
-A) expensive  [wrong: not about cost]
-B) careful  [CORRECT: precise and thorough]
-C) innovative  [wrong: about novelty, not precision]
-D) complex  [wrong: about difficulty, not thoroughness]`}
-
-EXPLANATIONS:
-30 - 50 words explaining:
-1. Why the correct answer is right(with specific reasoning / calculation)
-2. ${type === 'MATH' ? 'What error leads to the most common distractor' : 'Why the most tempting distractor is incorrect'}
-3. Use precise academic language
-
-DIFFICULTY CALIBRATION(${diffDesc}):
-${difficulty === 'easy' ? '- Target: 70-85% of students answer correctly\n- Use straightforward application of concepts\n- Fewer steps, clearer relationships' : ''}
-${difficulty === 'hard' ? '- Target: 25-40% of students answer correctly\n- Multi-step reasoning required\n- Combine multiple concepts\n- Distractors from sophisticated misconceptions' : ''}
-${!difficulty || difficulty === 'adaptive' ? '- Mix: 40-50% moderate difficulty, 30-40% challenging, 10-20% very challenging\n- Gradually increase complexity through the set' : ''}
-
-JSON FORMAT(exact structure):
-[
-  {
-    ${type === 'READING_WRITING' ? '"passage": "Authentic 40-120 word passage here...",\n    ' : ''}"question": "Official SAT-style question stem?",
-  "imagePrompt": "Detailed visual description of chart/graph/geometry if question requires visual (else leave out)",
-  "options": [
-    "A) First choice",
-    "B) Second choice",
-    "C) Third choice",
-    "D) Fourth choice"
-  ],
-  "correctAnswer": 2,
-  "explanation": "Choice C is correct because [specific reasoning]. Choice A results from [specific error].",
-  "type": "multiple-choice"
-  }
-]
-
-FINAL QUALITY CHECK:
-✓ Could this appear on an actual SAT exam ?
-✓ Are all distractors challenging and realistic ?
-✓ Is the language formal and precise ?
-✓ ${type === 'READING_WRITING' ? 'Does each question have a substantive passage?' : 'Are numerical values realistic?'}
-✓ Would a well - prepared student need to think carefully ?
-
-  Output ONLY valid JSON.No markdown, no preamble, no explanation outside JSON.`;
+Output ONLY a valid JSON array (no markdown, no extra text):
+[${formatExample}]`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.15, 5000); // Elite quality: College Board SAT standards with sophisticated distractors
+    ], 0.3, 4000);
 
     const json = parseAIResponse(response);
-    if (!Array.isArray(json)) return [];
+    if (!Array.isArray(json) || json.length === 0) return [];
 
-    const processedQuestions = await Promise.all(json.map(async (q: any, index: number) => {
-      let imageUrl = q.imageUrl;
-
-      // Auto-generate image if prompt exists and image URL is not provided
-      if (q.imagePrompt && !imageUrl) {
-        imageUrl = await generateImage(q.imagePrompt);
-      }
-
-      return {
-        id: `sat - ${type} -${Date.now()} -${index} `,
-        passage: q.passage || '',
-        imageUrl: imageUrl || undefined,
-        question: q.question || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        type: 'multiple-choice' as const
-      };
+    return json.map((q: any, index: number) => ({
+      id: `sat-${type}-${Date.now()}-${index}`,
+      passage: q.passage || '',
+      question: q.question || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      explanation: q.explanation || '',
+      type: 'multiple-choice' as const
     }));
-
-    return processedQuestions;
   }, cacheKey);
 };
 
