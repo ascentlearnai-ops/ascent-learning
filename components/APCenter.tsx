@@ -62,7 +62,7 @@ const APCenter: React.FC<APCenterProps> = ({ onExamReady }) => {
       const topicString = `AP Course: ${selectedCourse?.title}. Unit: ${unit.title}. Topics: ${unit.topics}.`;
 
       const summary = await generateAPLesson(selectedCourse?.title || '', unit.title, unit.topics);
-      const quiz = await generateAPQuestions(20, selectedCourse?.title || '', unit.title, 'medium');
+      const quiz = await generateAPQuestions(10, selectedCourse?.title || '', unit.title, 'medium');
       const flashcards = await generateFlashcards(topicString);
 
       const resource: Resource = {
