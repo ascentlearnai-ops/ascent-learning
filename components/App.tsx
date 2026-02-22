@@ -192,6 +192,7 @@ const App: React.FC = () => {
       const dbTier = await fetchUserTier();
       setMemoryTier(dbTier);
       setUserTier(dbTier);
+      localStorage.setItem('ascent_user_tier', dbTier);
     }
 
     initIdleMonitor(handleLogout);
@@ -584,9 +585,9 @@ const NavItem = ({ icon, label, active, onClick, onDelete }: any) => (
     {onDelete && (
       <button
         onClick={onDelete}
-        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute right-0 top-0 bottom-0 px-4 flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all rounded-r-xl"
       >
-        <Trash2 size={14} />
+        <Trash2 size={16} />
       </button>
     )}
   </div>

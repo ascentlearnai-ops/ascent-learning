@@ -6,6 +6,8 @@ import { Resource } from '../types';
 import { validateInput, dailyUploadLimiter, getTierLimits, getUserTier } from '../utils/security';
 import * as pdfjsLib from 'pdfjs-dist';
 import { MiniUnoGame } from './MiniUnoGame';
+import { MiniMemoryGame } from './MiniMemoryGame';
+import { MiniWordGame } from './MiniWordGame';
 // Use bundled worker to guarantee version match (fixes "PDF library version mismatch")
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -25,6 +27,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('idle');
   const [error, setError] = useState('');
   const [isGameOpen, setIsGameOpen] = useState(false);
+  const [activeGame, setActiveGame] = useState<'cards' | 'memory' | 'word'>('cards');
   const [dragActive, setDragActive] = useState(false);
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -33,6 +36,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
   const [wantsFlashcards, setWantsFlashcards] = useState(true);
   const [wantsQuiz, setWantsQuiz] = useState(true);
   const [quizCount, setQuizCount] = useState(5);
+  const [flashcardCount, setFlashcardCount] = useState(8);
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,8 +85,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
-      let finalTranscript = input;
-
       recognition.onresult = (event: any) => {
         let interimTranscript = '';
         let newFinal = '';
@@ -94,8 +96,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
           }
         }
         if (newFinal) {
-          finalTranscript += newFinal;
-          setInput(finalTranscript);
+          setInput(prev => prev + newFinal);
         }
       };
 
@@ -152,7 +153,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
       setProcessingStep('synthesizing');
       const [summary, flashcards, quiz] = await Promise.all([
         generateSummary(content),
-        wantsFlashcards ? generateFlashcards(content) : Promise.resolve([]),
+        wantsFlashcards ? generateFlashcards(content, flashcardCount) : Promise.resolve([]),
         wantsQuiz ? generateQuiz(content, quizCount) : Promise.resolve([])
       ]);
       setProcessingStep('finalizing');
@@ -264,7 +265,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
 
   return (
     <>
-      {isGameOpen && isProcessing && <MiniUnoGame onClose={() => setIsGameOpen(false)} />}
+      {isGameOpen && isProcessing && activeGame === 'cards' && <MiniUnoGame onClose={() => setIsGameOpen(false)} />}
+      {isGameOpen && isProcessing && activeGame === 'memory' && <MiniMemoryGame onClose={() => setIsGameOpen(false)} />}
+      {isGameOpen && isProcessing && activeGame === 'word' && <MiniWordGame onClose={() => setIsGameOpen(false)} />}
       <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in ${isGameOpen ? 'hidden' : ''}`} onClick={!isProcessing ? onClose : undefined}>
         <div className="w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl bg-[#0a0a0a] animate-scale-in" onClick={(e) => e.stopPropagation()}>
           <div className="px-6 py-5 border-b border-white/5 flex justify-between bg-[#0d0d0d]">
@@ -310,21 +313,17 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
                   </span>
                 </div>
 
-                <div className="flex flex-col items-center bg-black/60 border border-white/10 px-8 py-5 rounded-2xl shadow-inner backdrop-blur-md">
-                  <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-[0.2em] mb-2">Estimated Time</div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-black font-mono tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white to-zinc-400">
-                      {String(Math.floor(countdown / 60)).padStart(2, '0')}:{String(countdown % 60).padStart(2, '0')}
-                    </span>
-                    <span className="text-sm font-bold text-zinc-500 font-mono">s</span>
-                  </div>
-                </div>
+                {/* Timer removed as requested */}
 
                 <button
-                  onClick={() => setIsGameOpen(true)}
+                  onClick={() => {
+                    const games: ('cards' | 'memory' | 'word')[] = ['cards', 'memory', 'word'];
+                    setActiveGame(games[Math.floor(Math.random() * games.length)]);
+                    setIsGameOpen(true);
+                  }}
                   className="mt-8 px-6 py-3 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/30 transition-all font-mono text-sm tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
                 >
-                  Play Card Game While You Wait
+                  Play Mini-Game While You Wait
                 </button>
               </div>
             ) : (
@@ -387,6 +386,18 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
                       className="flex-1 accent-primary-500"
                     />
                     <span className="text-sm font-bold text-primary-400 bg-primary-500/10 px-3 py-1 rounded w-12 text-center">{quizCount}</span>
+                  </div>
+                )}
+                {wantsFlashcards && (
+                  <div className="flex items-center gap-4 bg-zinc-900/50 p-4 rounded-xl border border-white/5 mt-3">
+                    <span className="text-sm font-medium text-zinc-300 w-32">Flashcards:</span>
+                    <input
+                      type="range" min="8" max="30" step="1"
+                      value={flashcardCount}
+                      onChange={(e) => setFlashcardCount(parseInt(e.target.value))}
+                      className="flex-1 accent-primary-500"
+                    />
+                    <span className="text-sm font-bold text-primary-400 bg-primary-500/10 px-3 py-1 rounded w-12 text-center">{flashcardCount}</span>
                   </div>
                 )}
               </div>

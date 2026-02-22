@@ -563,8 +563,8 @@ const QuizTab = ({ questions, isExam = false }: { questions: QuizQuestion[], isE
 };
 
 const ChatTab = ({ context }: { context: string }) => {
-  const [messages, setMessages] = useState<{ role: 'user' | 'model', content: string }[]>([
-    { role: 'model', content: 'Neural link established. I have processed the material. Query me.' }
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
+    { role: 'assistant', content: 'Neural link established. I have processed the material. Query me.' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -599,7 +599,7 @@ const ChatTab = ({ context }: { context: string }) => {
       setRemainingChats(dailyChatLimiter.getRemaining(limits.dailyChats)); // Update UI
 
       let fullResponse = "";
-      setMessages(prev => [...prev, { role: 'model', content: "" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
 
       for await (const chunk of stream) {
         const chunkText = typeof chunk.text === 'function' ? chunk.text() : chunk.text;
@@ -613,7 +613,7 @@ const ChatTab = ({ context }: { context: string }) => {
         }
       }
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'model', content: e.message || "Connection error." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: e.message || "Connection error." }]);
     } finally {
       setIsLoading(false);
     }
@@ -634,11 +634,11 @@ const ChatTab = ({ context }: { context: string }) => {
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-thin scrollbar-thumb-zinc-800 relative z-10">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 md:gap-5 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-enter`}>
-            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg transition-transform hover:scale-110 ${msg.role === 'model'
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg transition-transform hover:scale-110 ${msg.role === 'assistant'
               ? 'bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
               : 'bg-zinc-800 border border-zinc-700'
               }`}>
-              {msg.role === 'model' ? <Sparkles size={16} /> : <User size={16} className="text-zinc-400" />}
+              {msg.role === 'assistant' ? <Sparkles size={16} /> : <User size={16} className="text-zinc-400" />}
             </div>
             <div className={`max-w-[85%] md:max-w-[70%] p-4 md:p-5 rounded-2xl text-sm leading-6 md:leading-7 shadow-sm ${msg.role === 'user'
               ? 'bg-primary-600 text-white rounded-tr-none shadow-[0_5px_20px_rgba(37,99,235,0.2)]'

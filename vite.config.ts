@@ -73,6 +73,9 @@ export default defineConfig({
 
   optimizeDeps: {
     include: ['react', 'react-dom', 'lucide-react'],
+    esbuildOptions: {
+      target: 'es2022'
+    }
   },
 
   server: {

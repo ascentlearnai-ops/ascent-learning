@@ -55,7 +55,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 } else {
                     drawCard(false);
                 }
-            }, 1500);
+            }, 2000);
             return () => clearTimeout(timer);
         }
     }, [turn, botHand, discardPile, currentColor, deck]);
@@ -171,11 +171,11 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const getColorClass = (color: Color, forceGradient: boolean = false) => {
-        if (color === 'red') return 'bg-gradient-to-br from-red-500 to-red-600 text-white border-red-400';
-        if (color === 'blue') return 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400';
-        if (color === 'green') return 'bg-gradient-to-br from-green-500 to-green-600 text-white border-green-400';
-        if (color === 'yellow') return 'bg-gradient-to-br from-yellow-400 to-amber-500 text-black border-yellow-200';
-        return 'bg-gradient-to-br from-zinc-800 to-black text-white border-zinc-600';
+        if (color === 'red') return 'bg-gradient-to-br from-red-500 to-red-700 text-white border-red-400/50';
+        if (color === 'blue') return 'bg-gradient-to-br from-blue-500 to-blue-700 text-white border-blue-400/50';
+        if (color === 'green') return 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white border-emerald-400/50';
+        if (color === 'yellow') return 'bg-gradient-to-br from-yellow-400 to-amber-500 text-black border-yellow-200/50';
+        return 'bg-gradient-to-br from-zinc-900 to-black text-white border-zinc-700';
     };
 
     return (
@@ -186,7 +186,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
 
             <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-white italic tracking-tighter mb-2">ASCENT UNO</h2>
+                <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 italic tracking-tighter mb-2 drop-shadow-md">ASCENT CARDS</h2>
                 <div className="inline-block px-4 py-1.5 bg-white/10 rounded-full text-xs font-mono text-zinc-300 font-bold uppercase tracking-widest">{message}</div>
             </div>
 
@@ -197,8 +197,8 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <div className="absolute -top-4 text-[10px] text-zinc-500 font-mono tracking-widest uppercase font-bold">Neural Opponent - {botHand.length} Cards</div>
                     {botHand.map((c, i) => (
                         <div key={i} className="-ml-6 w-14 h-20 sm:w-16 sm:h-24 rounded-lg bg-gradient-to-br from-zinc-800 to-black border-2 border-white/10 flex items-center justify-center shadow-lg relative overflow-hidden first:ml-0 shrink-0">
-                            <div className="absolute inset-1.5 border border-white/5 rounded-md flex items-center justify-center bg-[#050505] shadow-inner">
-                                <span className="text-white/20 font-black italic -rotate-12 text-sm opacity-50">UNO</span>
+                            <div className="absolute inset-1.5 border border-white/5 rounded-md flex items-center justify-center bg-[#050505] shadow-inner backdrop-blur-sm">
+                                <span className="text-white/20 font-black italic -rotate-12 text-sm opacity-50 tracking-widest">ASCENT</span>
                             </div>
                         </div>
                     ))}
@@ -239,7 +239,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     <div className="absolute top-2 left-3 text-lg drop-shadow-md">{displayNumber}</div>
                                     <div className="absolute bottom-2 right-3 text-lg rotate-180 drop-shadow-md">{displayNumber}</div>
 
-                                    <div className="bg-white/95 px-2 py-4 w-20 h-28 flex items-center justify-center rounded-[40%] text-center text-4xl shadow-inner border border-black/10 text-clip overflow-hidden">
+                                    <div className="bg-white/95 px-2 py-4 w-20 h-28 flex items-center justify-center rounded-[30%] text-center text-4xl shadow-inner border border-black/10 text-clip overflow-hidden group-hover:scale-105 transition-transform">
                                         <div style={{ color: textColor }} className="drop-shadow-sm font-black text-[2.5rem] tracking-tighter">
                                             {displayNumber}
                                         </div>
@@ -269,7 +269,7 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <div className="absolute top-2 left-2 text-sm sm:text-base text-white font-black max-w-[1.5rem] leading-none drop-shadow-md">{card.value}</div>
                                 <div className="absolute bottom-2 right-2 text-sm sm:text-base text-white font-black rotate-180 max-w-[1.5rem] leading-none drop-shadow-md">{card.value}</div>
 
-                                <div className="bg-white/95 w-14 h-20 sm:w-16 sm:h-24 flex items-center justify-center rounded-[40%] text-center text-2xl sm:text-3xl font-black shadow-inner border border-black/10">
+                                <div className="bg-white/95 w-14 h-20 sm:w-16 sm:h-24 flex items-center justify-center rounded-[30%] text-center text-2xl sm:text-3xl font-black shadow-inner border border-black/10 group-hover:scale-105 transition-transform">
                                     <div style={{ color: textColor }} className="drop-shadow-sm tracking-tighter">
                                         {card.value}
                                     </div>

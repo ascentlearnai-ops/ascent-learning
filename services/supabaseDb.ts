@@ -122,11 +122,23 @@ export const getUserStats = async (): Promise<UserStats> => {
 };
 
 export const fetchUserTier = async (): Promise<'Initiate' | 'Scholar' | 'Admin'> => {
+  const scholarEmails = ['pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com', 'ascentlearnai@gmail.com'];
+
+  // Check Local Storage (Mock Login Support)
+  if (typeof localStorage !== 'undefined') {
+    const mockUser = localStorage.getItem('ascent_username');
+    if (mockUser && scholarEmails.includes(mockUser.toLowerCase())) {
+      return 'Scholar';
+    }
+    const storedTier = localStorage.getItem('ascent_user_tier');
+    if (storedTier === 'Admin') return 'Admin';
+    if (storedTier === 'Scholar') return 'Scholar';
+  }
+
   if (!supabase) return 'Initiate';
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 'Initiate';
 
-  const scholarEmails = ['pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com', 'ascentlearnai@gmail.com'];
   if (user.email && scholarEmails.includes(user.email.toLowerCase())) {
     return 'Scholar';
   }

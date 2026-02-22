@@ -329,19 +329,19 @@ export const generateSummary = async (text: string): Promise<string> => {
     let maxTokens = 4000;
 
     if (wordCount < 1000) {
-      summaryGuidance = 'Focused summary (300-600 words): Focus on core concepts only.';
+      summaryGuidance = 'Focused summary (AT LEAST 650 words): Focus on core concepts only. Do not make it shorter than 650 words.';
       termGuidance = 'Identify 10-15 core academic terms critical to understanding.';
       maxTokens = 2000;
     } else if (wordCount < 5000) {
-      summaryGuidance = 'Standard summary (800-1500 words): Cover main ideas, key details, and significance.';
+      summaryGuidance = 'Standard summary (AT LEAST 1000-1500 words): Cover main ideas, key details, and significance.';
       termGuidance = 'Identify 20-30 advanced academic terms critical to understanding.';
       maxTokens = 3500;
     } else if (wordCount < 10000) {
-      summaryGuidance = 'Comprehensive summary (2000-3000 words): Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
+      summaryGuidance = 'Comprehensive summary (AT LEAST 2000-3000 words): Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
       termGuidance = 'Identify 30-50 advanced academic terms critical to understanding.';
       maxTokens = 5000;
     } else {
-      summaryGuidance = 'Extensive summary (2500-3500 words): Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
+      summaryGuidance = 'Extensive summary (AT LEAST 3000-4000 words, increasing with pdf size): Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
       termGuidance = 'Identify 40-60 advanced academic terms critical to understanding.';
       maxTokens = 6000;
     }
@@ -431,8 +431,8 @@ Generate ONLY the HTML content. Begin immediately with <h2> tags.`;
 };
 
 // Generate flashcards
-export const generateFlashcards = async (text: string): Promise<Flashcard[]> => {
-  const cacheKey = getCacheKey('flashcards', text);
+export const generateFlashcards = async (text: string, count: number = 8): Promise<Flashcard[]> => {
+  const cacheKey = getCacheKey(`flashcards_${count}`, text);
   const isTopic = isShortOrUrl(text);
 
   return smartGenerate(async () => {
@@ -440,7 +440,7 @@ export const generateFlashcards = async (text: string): Promise<Flashcard[]> => 
       ? `Topic: "${text}"`
       : `Text: ${text.substring(0, 50000)}`;
 
-    const prompt = `Create 10-15 educational flashcards from this content.
+    const prompt = `Create EXACTLY ${count} educational flashcards from this content.
 ${contextPrompt}
 
 Format as JSON array:

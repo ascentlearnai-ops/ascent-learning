@@ -569,20 +569,19 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
     }
   };
 
-  // Styling for HTML
   const styledLesson = (content || "")
-    .replace(/<h2>/g, '<h2 class="text-2xl font-bold text-white mt-10 mb-6 border-b border-white/10 pb-3 flex items-center gap-3"><span class="w-1.5 h-6 bg-indigo-500 rounded-full"></span>')
+    .replace(/<h2>/g, '<h2 class="text-xl md:text-2xl font-bold mb-6 mt-10 text-white flex items-center gap-3"><span class="w-1 h-6 bg-primary-500 rounded-full"></span>')
     .replace(/<\/h2>/g, '</h2>')
-    .replace(/<h3>/g, '<h3 class="text-xl font-bold text-white mt-8 mb-4">')
-    .replace(/<p>/g, '<p class="text-zinc-300 leading-8 mb-6 text-lg font-light">')
-    .replace(/<ul>/g, '<ul class="space-y-4 mb-8 text-zinc-300 bg-zinc-900/30 p-8 rounded-2xl border border-white/5">')
-    .replace(/<li>/g, '<li class="flex items-start gap-3"><span class="mt-2.5 w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span><span>')
+    .replace(/<h3>/g, '<h3 class="text-lg md:text-xl font-bold text-white mt-8 mb-4">')
+    .replace(/<p>/g, '<p class="text-zinc-300 leading-7 md:leading-8 mb-6 text-base md:text-lg font-light tracking-wide">')
+    .replace(/<ul>/g, '<ul class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5">')
+    .replace(/<li>/g, '<li class="flex items-start gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0"></span><span>')
     .replace(/<\/li>/g, '</span></li>')
-    .replace(/<strong>/g, '<strong class="text-indigo-300 font-bold">')
+    .replace(/<strong>/g, '<strong class="text-primary-300 font-bold border-b border-primary-500/30 pb-0.5">')
     .replace(/<pre>/g, '<pre class="bg-black/50 p-6 rounded-2xl border border-white/10 text-white font-mono text-sm overflow-x-auto mb-8 whitespace-pre-wrap">')
-    .replace(/<code>/g, '<code class="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded font-mono text-sm">')
-    .replace(/<blockquote>/g, '<blockquote class="border-l-4 border-indigo-500/50 pl-6 italic text-zinc-400 my-8 py-2 bg-indigo-500/5 rounded-r-xl">')
-    .replace(/<div(?:.*?|)class="[^"]*example[^"]*"(?:.*?|)>/gi, '<div class="bg-indigo-900/20 border border-indigo-500/30 p-6 rounded-2xl mb-8 text-indigo-100">');
+    .replace(/<code>/g, '<code class="bg-primary-900/20 text-primary-300 px-2 py-1 rounded font-mono text-sm border border-primary-500/20">')
+    .replace(/<blockquote>/g, '<blockquote class="border-l-4 border-primary-500/50 pl-6 italic text-zinc-400 my-8 py-2 bg-primary-500/5 rounded-r-xl">')
+    .replace(/<div(?:.*?|)class="[^"]*example[^"]*"(?:.*?|)>/gi, '<div class="bg-gradient-to-br from-primary-900/20 to-transparent border border-primary-500/20 p-6 md:p-8 rounded-2xl mb-8 relative overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-primary-500/50"></div>');
 
   // -- Embedded Quiz Logic --
   const currentQ = questions[currentIndex];
@@ -650,7 +649,7 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
               </div>
             </div>
           ) : tab === 'study' ? (
-            <div className="prose prose-invert max-w-3xl mx-auto" dangerouslySetInnerHTML={{ __html: styledLesson }} />
+            <div className="max-w-3xl mx-auto" dangerouslySetInnerHTML={{ __html: styledLesson }} />
           ) : (
             // QUIZ TAB
             <div className="h-full flex flex-col relative">
