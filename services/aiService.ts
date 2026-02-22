@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "stepfun/step-3.5-flash:free",
-  fallback: "stepfun/step-3.5-flash:free",
-  test: "stepfun/step-3.5-flash:free"
+  primary: "google/gemini-2.5-flash:free",
+  fallback: "qwen/qwen-2.5-coder-32b-instruct:free",
+  test: "google/gemini-2.5-flash:free"
 };
 
 // Start with primary, but allow override
@@ -67,7 +67,7 @@ const callDeepSeek = async (
       if (i === messages.length - 1 && m.role === 'user') {
         return {
           ...m,
-          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your internal reasoning extremely concise (under 50 words). Maximize generation speed and output the final response immediately. Do not over-explain.\n2. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
+          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your output clean and strictly follow the requested structure (e.g. JSON array or HTML).\n2. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
         };
       }
       return m;
@@ -230,14 +230,23 @@ const fetchWithFallback = async (url: string) => {
   const encUrl = encodeURIComponent(url);
   const proxies = [
     `https://corsproxy.io/?${encUrl}`,
-    `https://api.allorigins.win/raw?url=${encUrl}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encUrl}`
+    `https://api.allorigins.win/get?url=${encUrl}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encUrl}`,
+    `https://thingproxy.freeboard.io/fetch/${url}`
   ];
   let lastError;
   for (const proxy of proxies) {
     try {
       const resp = await fetch(proxy);
-      if (resp.ok) return await resp.text();
+      if (resp.ok) {
+        const text = await resp.text();
+        // Handle allorigins specific JSON wrapping
+        if (proxy.includes('allorigins') && text.includes('"contents":')) {
+          const json = JSON.parse(text);
+          return json.contents;
+        }
+        return text;
+      }
     } catch (e) {
       lastError = e;
     }
