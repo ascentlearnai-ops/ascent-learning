@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "google/gemini-2.5-flash:free",
-  fallback: "qwen/qwen-2.5-coder-32b-instruct:free",
-  test: "google/gemini-2.5-flash:free"
+  primary: "google/gemini-2.0-pro-exp-02-05:free",
+  fallback: "meta-llama/llama-3.3-70b-instruct:free",
+  test: "google/gemini-2.0-flash-lite-preview-02-05:free"
 };
 
 // Start with primary, but allow override
@@ -67,7 +67,7 @@ const callDeepSeek = async (
       if (i === messages.length - 1 && m.role === 'user') {
         return {
           ...m,
-          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your output clean and strictly follow the requested structure (e.g. JSON array or HTML).\n2. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
+          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your output clean and strictly follow the JSON or HTML format requested.\n2. Do NOT output markdown code blocks formatting (e.g. ```json), just output the raw parsed struct.\n3. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
         };
       }
       return m;
@@ -130,10 +130,16 @@ const parseAIResponse = (text: string | undefined): any => {
     // Find JSON array or object
     const jsonMatch = cleanText.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      // Fix potential unescaped control characters in JSON string
+      const sanitized = jsonMatch[0].replace(/[\u0000-\u001F]+/g, "");
+      try {
+        return JSON.parse(sanitized);
+      } catch (e) {
+        console.warn("Regex json parsing failed, trying raw...");
+      }
     }
 
-    return JSON.parse(cleanText);
+    return JSON.parse(cleanText.replace(/[\u0000-\u001F]+/g, ""));
   } catch (e) {
     const errorPreview = text ? String(text).substring(0, 200) : "undefined";
     console.error("JSON Parse Error:", e, "Text:", errorPreview);
@@ -229,22 +235,16 @@ const isShortOrUrl = (text: string) => text.trim().length < 300 || text.startsWi
 const fetchWithFallback = async (url: string) => {
   const encUrl = encodeURIComponent(url);
   const proxies = [
-    `https://corsproxy.io/?${encUrl}`,
-    `https://api.allorigins.win/get?url=${encUrl}`,
+    `https://api.allorigins.win/raw?url=${encUrl}`,
     `https://api.codetabs.com/v1/proxy?quest=${encUrl}`,
-    `https://thingproxy.freeboard.io/fetch/${url}`
+    `https://corsproxy.io/?${encUrl}`
   ];
   let lastError;
   for (const proxy of proxies) {
     try {
-      const resp = await fetch(proxy);
+      const resp = await fetch(proxy, { headers: { 'Accept': 'text/html' } });
       if (resp.ok) {
         const text = await resp.text();
-        // Handle allorigins specific JSON wrapping
-        if (proxy.includes('allorigins') && text.includes('"contents":')) {
-          const json = JSON.parse(text);
-          return json.contents;
-        }
         return text;
       }
     } catch (e) {

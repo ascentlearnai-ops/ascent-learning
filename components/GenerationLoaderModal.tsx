@@ -42,16 +42,29 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
                         {subtitle}
                     </p>
 
-                    <button
-                        onClick={() => {
-                            const games: ('cards' | 'memory' | 'word')[] = ['cards', 'memory', 'word'];
-                            setActiveGame(games[Math.floor(Math.random() * games.length)]);
-                            setIsGameOpen(true);
-                        }}
-                        className="px-8 py-4 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600/30 transition-all font-mono text-sm tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
-                    >
-                        Play Mini-Game While You Wait
-                    </button>
+                    <div className="mt-4 flex flex-col items-center gap-4 w-full">
+                        <span className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest font-bold">Select Neural Minigame</span>
+                        <div className="flex flex-wrap justify-center gap-3">
+                            <button
+                                onClick={() => { setActiveGame('cards'); setIsGameOpen(true); }}
+                                className="px-5 py-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
+                            >
+                                Cards
+                            </button>
+                            <button
+                                onClick={() => { setActiveGame('memory'); setIsGameOpen(true); }}
+                                className="px-5 py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
+                            >
+                                Memory
+                            </button>
+                            <button
+                                onClick={() => { setActiveGame('word'); setIsGameOpen(true); }}
+                                className="px-5 py-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
+                            >
+                                Cipher
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </>
