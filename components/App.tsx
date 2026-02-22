@@ -89,12 +89,17 @@ const App: React.FC = () => {
 
   // Logout Logic
   const handleLogout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    // 1. Immediately clear frontend auth flags
     localStorage.removeItem('ascent_session');
     localStorage.removeItem('ascent_user_tier');
     localStorage.removeItem('ascent_username');
+
+    // Also explicitly clear supabase tokens just in case
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        localStorage.removeItem(key);
+      }
+    });
 
     if (currentUsername) {
       unlockSession(currentUsername);
@@ -103,6 +108,17 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
     setCurrentView('dashboard');
     setCurrentUsername('');
+
+    // 2. Safely ping Supabase logout without hanging the native UI
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.warn('Logout network sync failed', e);
+      }
+    }
+
+    window.location.reload();
   };
 
   // Check for existing session & Init Security Monitors
