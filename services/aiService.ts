@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "google/gemini-2.0-pro-exp-02-05:free",
-  fallback: "meta-llama/llama-3.3-70b-instruct:free",
-  test: "google/gemini-2.0-flash-lite-preview-02-05:free"
+  primary: "google/gemini-2.5-flash:free",
+  fallback: "google/gemini-2.0-flash-lite-preview-02-05:free",
+  test: "meta-llama/llama-3.3-70b-instruct:free"
 };
 
 // Start with primary, but allow override
@@ -66,8 +66,8 @@ const callDeepSeek = async (
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     requestQueue = requestQueue.then(async () => {
-      // 1.5s delay between exact consecutive API calls to relieve strict rate limit bounds
-      await new Promise(res => setTimeout(res, 1500));
+      // 500ms delay between exact consecutive API calls to relieve strict rate limit bounds without causing massive lag
+      await new Promise(res => setTimeout(res, 500));
       try {
         // Append a forceful speed constraint and readability constraint to the latest user message
         const speedOptimizedMessages = messages.map((m, i) => {

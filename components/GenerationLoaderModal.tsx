@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain } from 'lucide-react';
+import { Brain, X } from 'lucide-react';
 import { MiniUnoGame } from './MiniUnoGame';
 import { MiniMemoryGame } from './MiniMemoryGame';
 import { MiniWordGame } from './MiniWordGame';
@@ -8,12 +8,14 @@ interface GenerationLoaderModalProps {
     isOpen: boolean;
     title?: string;
     subtitle?: string;
+    onClose?: () => void;
 }
 
 export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
     isOpen,
     title = "Synthesizing Protocol",
-    subtitle = "Calibrating Neural Pathways"
+    subtitle = "Calibrating Neural Pathways",
+    onClose
 }) => {
     const [isGameOpen, setIsGameOpen] = useState(false);
     const [activeGame, setActiveGame] = useState<'cards' | 'memory' | 'word'>('cards');
@@ -27,6 +29,11 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
             {isGameOpen && activeGame === 'word' && <MiniWordGame onClose={() => setIsGameOpen(false)} />}
             <div className={`fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in ${isGameOpen ? 'hidden' : ''}`}>
                 <div className="w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl bg-zinc-950 p-12 flex flex-col items-center relative overflow-hidden animate-scale-in">
+                    {onClose && (
+                        <button onClick={onClose} className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-red-400 transition-colors bg-white/5 rounded-full z-50">
+                            <X size={20} />
+                        </button>
+                    )}
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
                     <div className="relative flex justify-center items-center w-24 h-24 mb-8">
@@ -61,7 +68,7 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
                                 onClick={() => { setActiveGame('word'); setIsGameOpen(true); }}
                                 className="px-5 py-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
                             >
-                                Cipher
+                                Wordle
                             </button>
                         </div>
                     </div>

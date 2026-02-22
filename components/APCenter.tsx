@@ -136,8 +136,8 @@ const APCenter: React.FC<APCenterProps> = ({ onExamReady }) => {
   if (selectedCourse) {
     return (
       <div className="max-w-5xl mx-auto py-8 animate-enter relative">
-        <GenerationLoaderModal isOpen={loadingUnit !== null} title="Extracting Unit Modules" subtitle={`Processing ${loadingUnit}`} />
-        <GenerationLoaderModal isOpen={loadingExam} title="Constructing Final Simulation" subtitle="Cross-referencing All Domains" />
+        <GenerationLoaderModal isOpen={loadingUnit !== null} onClose={() => setLoadingUnit(null)} title="Extracting Unit Modules" subtitle={`Processing ${loadingUnit}`} />
+        <GenerationLoaderModal isOpen={loadingExam} onClose={() => setLoadingExam(false)} title="Constructing Final Simulation" subtitle="Cross-referencing All Domains" />
 
         <button
           onClick={() => setSelectedCourse(null)}

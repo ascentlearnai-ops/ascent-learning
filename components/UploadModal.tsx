@@ -272,7 +272,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
         <div className="w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl bg-[#0a0a0a] animate-scale-in" onClick={(e) => e.stopPropagation()}>
           <div className="px-6 py-5 border-b border-white/5 flex justify-between bg-[#0d0d0d]">
             <h3 className="font-bold text-lg text-white tracking-tight">{isProcessing ? 'Processing...' : 'Add Resource'}</h3>
-            {!isProcessing && <button onClick={onClose} className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors duration-200"><X size={20} /></button>}
+            <button onClick={() => { setProcessingStep('idle'); onClose(); }} className="p-2 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-white/5 transition-colors duration-200"><X size={20} /></button>
           </div>
           {!isProcessing && (
             <div className="flex border-b border-white/5">
@@ -334,7 +334,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
                       onClick={() => { setActiveGame('word'); setIsGameOpen(true); }}
                       className="px-5 py-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
                     >
-                      Cipher
+                      Wordle
                     </button>
                   </div>
                 </div>

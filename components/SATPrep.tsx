@@ -139,7 +139,7 @@ const GeneratorCard = ({ type, title, desc, icon, onGenerate }: { type: 'MATH' |
 
   return (
     <>
-      <GenerationLoaderModal isOpen={loading} title="Synthesizing Exam" subtitle="Compiling Question Bank" />
+      <GenerationLoaderModal isOpen={loading} onClose={() => setLoading(false)} title="Synthesizing Exam" subtitle="Compiling Question Bank" />
       <div className="bg-[#0A0A0A] border border-white/5 rounded-3xl p-10 relative overflow-hidden flex flex-col h-full min-h-[400px] group hover:border-white/10 transition-colors">
         <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${type === 'MATH' ? 'from-blue-600 to-cyan-400' : 'from-purple-600 to-pink-400'}`}></div>
 
@@ -203,7 +203,7 @@ const PracticeSessionOverlay = ({ questions, type, onClose, onRegenerate }: { qu
   };
 
   if (isRegenerating) {
-    return <GenerationLoaderModal isOpen={true} title="Regenerating Module" subtitle="Recompiling Adaptive Vectors" />;
+    return <GenerationLoaderModal isOpen={true} onClose={() => setIsRegenerating(false)} title="Regenerating Module" subtitle="Recompiling Adaptive Vectors" />;
   }
 
   const handleNextStage = () => {
@@ -632,7 +632,7 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-10 bg-[#080808] relative">
-          <GenerationLoaderModal isOpen={loading} title="Loading Study Module" subtitle="Extracting Concept Documentation" />
+          <GenerationLoaderModal isOpen={loading} onClose={onClose} title="Loading Study Module" subtitle="Extracting Concept Documentation" />
 
           {error ? (
             <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
@@ -653,7 +653,7 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
           ) : (
             // QUIZ TAB
             <div className="h-full flex flex-col relative">
-              <GenerationLoaderModal isOpen={qLoading} title="Generating Skill Assessment" subtitle="Assembling Node Challenges" />
+              <GenerationLoaderModal isOpen={qLoading} onClose={() => setQLoading(false)} title="Generating Skill Assessment" subtitle="Assembling Node Challenges" />
 
               {showResults ? (
                 <div className="h-full flex flex-col animate-in fade-in pb-8">
