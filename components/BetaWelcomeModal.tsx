@@ -36,7 +36,7 @@ export const BetaWelcomeModal: React.FC<BetaWelcomeModalProps> = ({ isOpen, onCl
 
                     <p className="text-zinc-400 text-sm leading-relaxed mb-10 px-2">
                         Ascent is utilizing the bleeding-edge <strong className="text-cyan-400 font-bold">StepFun 3.5 Flash AI</strong> model for unmatched speed and tutor-level logic.
-                        Despite the short waits, the accuracy and quality of the generated materials are exceptionally high. Thank you for testing this early build!
+                        Despite the long waits, the accuracy and quality of the generated materials are exceptionally high. Thank you for testing this early build!
                     </p>
 
                     <button

@@ -29,6 +29,10 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [countdown, setCountdown] = useState(45);
+  // Options
+  const [wantsFlashcards, setWantsFlashcards] = useState(true);
+  const [wantsQuiz, setWantsQuiz] = useState(true);
+  const [quizCount, setQuizCount] = useState(5);
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,13 +113,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
       setIsRecording(true);
       setError('');
 
-      // Auto-stop after 20 minutes (1200000 ms) max supported conceptually
-      setTimeout(() => {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-          setIsRecording(false);
-        }
-      }, 1200000);
+      // Limit removed to support infinite lecture recording
 
     } catch (e: any) {
       setError("Could not start recording.");
@@ -154,8 +152,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
       setProcessingStep('synthesizing');
       const [summary, flashcards, quiz] = await Promise.all([
         generateSummary(content),
-        generateFlashcards(content),
-        generateQuiz(content)
+        wantsFlashcards ? generateFlashcards(content) : Promise.resolve([]),
+        wantsQuiz ? generateQuiz(content, quizCount) : Promise.resolve([])
       ]);
       setProcessingStep('finalizing');
       await new Promise(r => setTimeout(r, 800));
@@ -165,7 +163,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
 
       const newResource: Resource = {
         id: Date.now().toString(),
-        title,
+        title: activeTab === 'voice' ? 'Lecture Notes' : title,
         type: activeTab === 'youtube' ? 'YOUTUBE' : activeTab === 'voice' ? 'VOICE' : 'TEXT',
         originalContent: content,
         summary,
@@ -338,7 +336,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
                     <button onClick={handleToggleRecording} className={`w-full flex items-center justify-center gap-2 py-8 rounded-2xl border-2 transition-all duration-200 ${isRecording ? 'border-red-500/50 bg-red-500/10' : 'border-dashed border-white/10 hover:border-primary-500/50 hover:bg-white/5'}`}>
                       {isRecording ? <Square size={32} className="text-red-400 animate-pulse" /> : <Mic size={32} className="text-zinc-500" />}
                       <span className={`text-lg font-medium ${isRecording ? 'text-red-400' : 'text-zinc-400'}`}>
-                        {isRecording ? 'Stop Recording' : 'Start Recording (Up to 20m)'}
+                        {isRecording ? 'Stop Recording' : 'Record lecture for notes (Infinite)'}
                       </span>
                     </button>
                     {isRecording && <div className="text-center text-red-500/80 text-sm animate-pulse flex items-center justify-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div> Recording... Speak clearly into microphone</div>}
@@ -356,6 +354,42 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
                 )}
                 {error && <div className="mt-3 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-300 text-sm">{error}</div>}
               </>
+            )}
+
+            {!isProcessing && (
+              <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
+                <div className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-2">Generation Options</div>
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={wantsFlashcards} onChange={(e) => setWantsFlashcards(e.target.checked)} className="hidden" />
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${wantsFlashcards ? 'bg-primary-500 border-primary-500 text-white' : 'border-zinc-700 bg-zinc-900 group-hover:border-zinc-500'}`}>
+                      {wantsFlashcards && <CheckCircle size={14} />}
+                    </div>
+                    <span className="text-sm text-zinc-300 font-medium">Flashcards</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={wantsQuiz} onChange={(e) => setWantsQuiz(e.target.checked)} className="hidden" />
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${wantsQuiz ? 'bg-primary-500 border-primary-500 text-white' : 'border-zinc-700 bg-zinc-900 group-hover:border-zinc-500'}`}>
+                      {wantsQuiz && <CheckCircle size={14} />}
+                    </div>
+                    <span className="text-sm text-zinc-300 font-medium">Auto-Generate Quiz</span>
+                  </label>
+                </div>
+
+                {wantsQuiz && (
+                  <div className="flex items-center gap-4 bg-zinc-900/50 p-4 rounded-xl border border-white/5 mt-3">
+                    <span className="text-sm font-medium text-zinc-300 w-32">Questions:</span>
+                    <input
+                      type="range" min="5" max="20" step="1"
+                      value={quizCount}
+                      onChange={(e) => setQuizCount(parseInt(e.target.value))}
+                      className="flex-1 accent-primary-500"
+                    />
+                    <span className="text-sm font-bold text-primary-400 bg-primary-500/10 px-3 py-1 rounded w-12 text-center">{quizCount}</span>
+                  </div>
+                )}
+              </div>
             )}
           </div>
           {!isProcessing && (

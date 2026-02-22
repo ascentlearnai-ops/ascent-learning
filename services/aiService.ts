@@ -93,7 +93,7 @@ const callDeepSeek = async (
       throw new Error("Empty response from AI generation.");
     }
   } catch (error: any) {
-    const errorText = error.response?.data?.error?.message || error.message || "";
+    const errorText = error.response?.data?.error?.message || error.response?.data?.error || error.message || "";
     console.error(`OpenRouter API Error with ${currentModel}:`, errorText);
 
     if (attemptFallback && currentModel === MODELS.primary) {
@@ -103,12 +103,16 @@ const callDeepSeek = async (
     }
 
     let userMessage = "AI generation failed. ";
-    if (errorText.includes("Invalid key") || errorText.includes("401")) {
-      userMessage = "Invalid API key. Please check your variables.";
-    } else if (errorText.includes("429") || errorText.includes("quota")) {
-      userMessage = "Rate limit exceeded. Please wait a moment and try again.";
+    if (typeof errorText === 'string') {
+      if (errorText.includes("Invalid key") || errorText.includes("401")) {
+        userMessage = "Invalid API key. Please check your variables.";
+      } else if (errorText.includes("429") || errorText.includes("quota")) {
+        userMessage = "Rate limit exceeded. Please wait a moment and try again.";
+      } else {
+        userMessage = `API error: ${errorText}`;
+      }
     } else {
-      userMessage = `API error: ${errorText}`;
+      userMessage = `API error: ${JSON.stringify(errorText)}`;
     }
     throw new Error(userMessage);
   }
@@ -389,19 +393,23 @@ STRUCTURAL TEMPLATE:
 <h2>Overview and Context</h2>
 <p>[Brief introduction establishing significance and scope]</p>
 
-<h2>[Main Content Section 1 - by period/theme]</h2>
-<p>[Detailed analysis with causes, effects, and evidence]</p>
-
-<h2>[Main Content Section 2]</h2>
-<p>[Continue structured analysis]</p>
-
-<h2>Historical/Conceptual Significance</h2>
-<p>[Why this matters—long-term impact, connections to broader themes]</p>
-
-<h2>Key Takeaways</h2>
+<h2>[Major Topic / Theme 1]</h2>
 <ul>
-  <li>[Synthesis point 1]</li>
-  <li>[Synthesis point 2]</li>
+  <li><strong>[Key Concept/Term]</strong>: [Detailed but concise explanation]</li>
+  <li><strong>[Important Detail]</strong>: [Evidence or specific facts supporting the concept]</li>
+  <li><strong>[Analysis]</strong>: [Why this matters, cause/effect, or historical/technical significance]</li>
+</ul>
+
+<h2>[Major Topic / Theme 2]</h2>
+<ul>
+  <li><strong>[Key Concept/Term]</strong>: [Detailed but concise explanation]</li>
+  <li><strong>[Important Detail]</strong>: [Evidence or specific facts supporting the concept]</li>
+</ul>
+
+<h2>Key Takeaways & Summary</h2>
+<ul>
+  <li>[Synthesis point 1 connecting the major themes]</li>
+  <li>[Synthesis point 2 establishing real-world or academic impact]</li>
   <li>[Synthesis point 3]</li>
 </ul>
 
