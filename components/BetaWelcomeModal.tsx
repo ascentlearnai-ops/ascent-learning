@@ -35,9 +35,7 @@ export const BetaWelcomeModal: React.FC<BetaWelcomeModalProps> = ({ isOpen, onCl
                     </div>
 
                     <p className="text-zinc-400 text-sm leading-relaxed mb-10 px-2">
-                        Ascent is utilizing the bleeding-edge <strong className="text-cyan-400 font-bold">DeepSeek R1 AI</strong> model for unparalleled tutor-level reasoning logic.
-                        Because of this massive reasoning depth, generating content <strong className="text-white font-medium">takes longer than normal</strong>.
-                        <br /><br />
+                        Ascent is utilizing the bleeding-edge <strong className="text-cyan-400 font-bold">StepFun 3.5 Flash AI</strong> model for unmatched speed and tutor-level logic.
                         Despite the short waits, the accuracy and quality of the generated materials are exceptionally high. Thank you for testing this early build!
                     </p>
 

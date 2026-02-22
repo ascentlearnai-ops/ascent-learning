@@ -126,6 +126,11 @@ export const fetchUserTier = async (): Promise<'Initiate' | 'Scholar' | 'Admin'>
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 'Initiate';
 
+  const scholarEmails = ['pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com', 'ascentlearnai@gmail.com'];
+  if (user.email && scholarEmails.includes(user.email.toLowerCase())) {
+    return 'Scholar';
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('tier')

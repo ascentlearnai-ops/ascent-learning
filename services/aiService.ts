@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "deepseek/deepseek-r1-0528:free",
-  fallback: "deepseek/deepseek-r1-0528:free",
-  test: "deepseek/deepseek-r1-0528:free"
+  primary: "stepfun/step-3.5-flash",
+  fallback: "stepfun/step-3.5-flash",
+  test: "stepfun/step-3.5-flash"
 };
 
 // Start with primary, but allow override
