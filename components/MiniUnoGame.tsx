@@ -179,8 +179,8 @@ export const MiniUnoGame: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fade-in font-sans overflow-y-auto min-h-screen">
-            <div className="absolute top-6 right-6 flex gap-4 pr-4">
+        <div className="fixed inset-0 z-[500] flex flex-col items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-fade-in font-sans overflow-y-auto min-h-screen">
+            <div className="absolute top-6 right-6 flex gap-4 pr-4 z-50">
                 <button onClick={startNewGame} className="p-2 text-zinc-400 hover:text-white transition-colors bg-white/5 rounded-full"><RefreshCw size={24} /></button>
                 <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white transition-colors bg-white/5 rounded-full"><X size={24} /></button>
             </div>
