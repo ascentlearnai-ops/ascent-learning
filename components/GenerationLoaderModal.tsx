@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Brain, X } from 'lucide-react';
 import { MiniUnoGame } from './MiniUnoGame';
 import { MiniMemoryGame } from './MiniMemoryGame';
-import { MiniWordGame } from './MiniWordGame';
 
 interface GenerationLoaderModalProps {
     isOpen: boolean;
@@ -18,7 +17,7 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
     onClose
 }) => {
     const [isGameOpen, setIsGameOpen] = useState(false);
-    const [activeGame, setActiveGame] = useState<'cards' | 'memory' | 'word'>('cards');
+    const [activeGame, setActiveGame] = useState<'cards' | 'memory'>('cards');
 
     if (!isOpen) return null;
 
@@ -26,7 +25,6 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
         <>
             {isGameOpen && activeGame === 'cards' && <MiniUnoGame onClose={() => setIsGameOpen(false)} />}
             {isGameOpen && activeGame === 'memory' && <MiniMemoryGame onClose={() => setIsGameOpen(false)} />}
-            {isGameOpen && activeGame === 'word' && <MiniWordGame onClose={() => setIsGameOpen(false)} />}
             <div className={`fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in ${isGameOpen ? 'hidden' : ''}`}>
                 <div className="w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl bg-zinc-950 p-12 flex flex-col items-center relative overflow-hidden animate-scale-in">
                     {onClose && (
@@ -63,12 +61,6 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
                                 className="px-5 py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
                             >
                                 Memory
-                            </button>
-                            <button
-                                onClick={() => { setActiveGame('word'); setIsGameOpen(true); }}
-                                className="px-5 py-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
-                            >
-                                Wordle
                             </button>
                         </div>
                     </div>

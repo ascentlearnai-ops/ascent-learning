@@ -267,7 +267,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
     <>
       {isGameOpen && isProcessing && activeGame === 'cards' && <MiniUnoGame onClose={() => setIsGameOpen(false)} />}
       {isGameOpen && isProcessing && activeGame === 'memory' && <MiniMemoryGame onClose={() => setIsGameOpen(false)} />}
-      {isGameOpen && isProcessing && activeGame === 'word' && <MiniWordGame onClose={() => setIsGameOpen(false)} />}
       <div className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in ${isGameOpen ? 'hidden' : ''}`} onClick={!isProcessing ? onClose : undefined}>
         <div className="w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl bg-[#0a0a0a] animate-scale-in" onClick={(e) => e.stopPropagation()}>
           <div className="px-6 py-5 border-b border-white/5 flex justify-between bg-[#0d0d0d]">
@@ -329,12 +328,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
                       className="px-5 py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
                     >
                       Memory
-                    </button>
-                    <button
-                      onClick={() => { setActiveGame('word'); setIsGameOpen(true); }}
-                      className="px-5 py-2.5 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-all font-mono text-xs tracking-widest font-bold uppercase shadow-lg hover:scale-105 active:scale-95"
-                    >
-                      Wordle
                     </button>
                   </div>
                 </div>
@@ -423,7 +416,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUploadComp
             </div>
           )}
         </div>
-      </div>
+      </div >
     </>
   );
 };

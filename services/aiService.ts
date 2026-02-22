@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "google/gemini-2.5-flash:free",
-  fallback: "google/gemini-2.0-flash-lite-preview-02-05:free",
-  test: "meta-llama/llama-3.3-70b-instruct:free"
+  primary: "stepfun/step-3.5-flash:free",
+  fallback: "stepfun/step-3.5-flash:free",
+  test: "stepfun/step-3.5-flash:free"
 };
 
 // Start with primary, but allow override
