@@ -4,9 +4,9 @@ import axios from 'axios';
 
 // Model selection - prioritize speed and quality using OpenRouter free models
 const MODELS = {
-  primary: "stepfun/step-3.5-flash:free",
-  fallback: "stepfun/step-3.5-flash:free",
-  test: "stepfun/step-3.5-flash:free"
+  primary: "stepfun/step-3.5-flash:free",   // summaries, lessons (HTML output)
+  json: "arcee-ai/arcee-blitz:free",         // quizzes, flashcards, SAT questions (JSON output)
+  fallback: "stepfun/step-3.5-flash:free"
 };
 
 // Start with primary, but allow override
@@ -118,6 +118,33 @@ const callDeepSeek = async (
       userMessage = `API error: ${JSON.stringify(errorText)}`;
     }
     throw new Error(userMessage);
+  }
+};
+
+// Dedicated JSON-output model (Arcee AI) — for quizzes, flashcards, SAT questions
+const callJsonModel = async (
+  messages: Array<{ role: string; content: string }>,
+  maxTokens: number = 4000
+): Promise<string> => {
+  try {
+    const response = await axios.post(
+      "/api/generate",
+      {
+        model: MODELS.json,
+        messages,
+        temperature: 0.2, // Low temp for reliable JSON
+        max_tokens: Math.min(maxTokens, 6000),
+      },
+      { timeout: 60000 }
+    );
+    if (response.data?.choices?.length > 0) {
+      return response.data.choices[0].message.content;
+    }
+    throw new Error("Empty response from JSON model.");
+  } catch (error: any) {
+    // Fall back to primary model if Arcee fails
+    console.warn("JSON model failed, falling back to primary:", error.message);
+    return callDeepSeek(messages, 0.2, maxTokens, false);
   }
 };
 
@@ -480,41 +507,32 @@ export const generateFlashcards = async (text: string, count: number = 8): Promi
   const isTopic = isShortOrUrl(text);
 
   return smartGenerate(async () => {
-    const contextPrompt = isTopic
-      ? `Topic: "${text}"`
-      : `Text: ${text.substring(0, 50000)}`;
+    const context = isTopic ? `Topic: "${text}"` : `Text: ${text.substring(0, 40000)}`;
 
-    const prompt = `Create EXACTLY ${count} educational flashcards from this content.
-${contextPrompt}
+    const prompt = `Create EXACTLY ${count} educational flashcards.
+${context}
 
-Format as JSON array:
-[
-  {"front": "Question or term", "back": "Answer or definition"},
-  ...
-]
+Output ONLY a JSON array (no markdown, no extra text):
+[{"front": "Question or key term", "back": "Clear, concise answer or definition"}]
 
-CRITICAL WRITING STANDARDS:
-- MAXIMUM REASONING DEPTH: Break down complex concepts into structured, step-by-step explanations on the back of the card if necessary.
-- STRICTLY define terms and questions using an 8th-grade reading level but retain AP/SAT rigor.
-- KEEP ALL advanced academic vocabulary/concepts, but explain them simply with tutor-level clarity.
-- Prioritize accuracy and verifiable facts. Zero hallucinations.
-- Keep answers concise, cleanly formatted, and easy to review.
+Rules:
+- front: 5-15 words, specific and testable
+- back: 10-40 words, accurate and clear
+- Cover the most important concepts
+- No duplicate questions`;
 
-Output ONLY the JSON array, no other text.`;
-
-    const response = await callDeepSeek([
-      { role: "user", content: prompt }
-    ], 0.5, 1800); // High quality flashcards with excellent definitions, fast execution
+    const response = await callJsonModel([{ role: "user", content: prompt }], 2500);
 
     const json = parseAIResponse(response);
-    return Array.isArray(json)
-      ? json.map((card: any, index: number) => ({
-        id: `fc-${Date.now()}-${index}`,
-        front: card.front || '',
-        back: card.back || '',
-        status: 'new' as const
-      }))
-      : [];
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate flashcards. Please try again.");
+    }
+    return json.map((card: any, index: number) => ({
+      id: `fc-${Date.now()}-${index}`,
+      front: card.front || '',
+      back: card.back || '',
+      status: 'new' as const
+    }));
   }, cacheKey);
 };
 
@@ -524,107 +542,36 @@ export const generateQuiz = async (text: string, count: number = 5): Promise<Qui
   const isTopic = isShortOrUrl(text);
 
   return smartGenerate(async () => {
-    const contextPrompt = isTopic
-      ? `Topic: "${text}"`
-      : `Source Material: ${text.substring(0, 50000)}`;
+    const context = isTopic ? `Topic: "${text}"` : `Source Material: ${text.substring(0, 40000)}`;
 
-    const prompt = `${contextPrompt}
+    const prompt = `Generate exactly ${count} multiple-choice questions.
+${context}
 
-MISSION: Generate ${count} AP and SAT-level multiple-choice questions that assess deep understanding, critical thinking, and analytical reasoning—NOT simple recall.
+Rules:
+- Test understanding and reasoning, NOT simple recall
+- 4 answer choices (A, B, C, D) — all plausible, distractors from common misconceptions
+- correctAnswer: 0-based index (0=A, 1=B, 2=C, 3=D)
+- explanation: 2-3 sentences, why correct + why main distractor is wrong
+- Academic language, AP/SAT difficulty level
 
-COLLEGE BOARD QUALITY STANDARDS:
-This must match the rigor of official SAT, AP U.S. History, AP World History, AP Biology, AP Chemistry, and AP English exams.
-Think: Princeton Review, Kaplan, College Board official practice materials.
+Output ONLY a valid JSON array (no markdown, no extra text):
+[{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}]`;
 
-QUESTION TYPES (distribute across these categories):
-1. ANALYSIS: "Which of the following best explains why..." "What was the primary cause of..."
-2. INFERENCE: "Based on the information, one can reasonably conclude that..." "The passage suggests that..."
-3. COMPARISON: "How does X differ from Y in terms of..." "Which statement accurately compares..."
-4. EVIDENCE-BASED: "Which evidence best supports the claim that..." "The author's argument relies primarily on..."
-5. CONCEPTUAL APPLICATION: "If this principle were applied to X, the result would be..." "This concept is most similar to..."
-
-AVOID:
-✗ Simple recall: "What year did X happen?" "Who was the leader of Y?"
-✗ Vocabulary matching: "The term X means..."
-✗ Obviously wrong distractors that no student would select
-
-QUESTION CONSTRUCTION:
-- Question stem: 20-40 words, academically precise, test understanding not memory
-- Include context when needed: "In the context of [X], which statement..."
-- Use formal academic language: "primary factor" not "main thing", "demonstrates" not "shows"
-
-ANSWER CHOICES (CRITICAL):
-- Label A, B, C, D (not 1, 2, 3, 4)
-- Each choice: 10-25 words, parallel structure, similar length
-- ALL FOUR must sound plausible to someone who partially understands the material
-- Distractors should contain partial truths, common misconceptions, or adjacent concepts
-- Only ONE choice is definitively correct based on evidence
-- Explain advanced concepts simply, honoring an 8th-grade reading level, but use academic phrasing: "emerged primarily as a result of" not "happened because"
-
-DISTRACTOR QUALITY (like real College Board exams):
-- Include dates/facts that are close but not exact
-- Reference related but distinct concepts
-- Use partially correct statements with one critical flaw
-- Mirror language from source material but apply it incorrectly
-
-EXPLANATIONS:
-- 30-60 words explaining WHY the correct answer is right
-- Reference specific evidence from source material
-- Explain why key distractors are incorrect (especially the most tempting one)
-- Write explanations strictly at an 8th-grade reading level.
-- Academic tone: "This choice accurately reflects..." "The evidence demonstrates..."
-
-JSON FORMAT (strict):
-[
-  {
-    "question": "In the context of [topic], which of the following best explains [concept]?",
-    "imagePrompt": "Detailed visual description of chart/graph/geometry if question requires visual (else leave out)",
-    "options": [
-      "A) [Plausible but incorrect - common misconception]",
-      "B) [Plausible but incorrect - partially true]",
-      "C) [CORRECT - evidence-based, precise]",
-      "D) [Plausible but incorrect - related concept]"
-    ],
-    "correctAnswer": 2,
-    "explanation": "Choice C accurately identifies [specific evidence]. Choice A incorrectly suggests [flaw]. Choice B, while partially true regarding [aspect], fails to account for [critical factor]."
-  }
-]
-
-QUALITY CHECKLIST:
-✓ Would this appear on an actual AP or SAT exam?
-✓ Do all four choices require careful consideration?
-✓ Does the question test understanding, not memorization?
-✓ Are distractors realistic and challenging?
-✓ Is the correct answer unambiguously supported by evidence?
-
-Output ONLY the JSON array, no other text.`;
-
-    const response = await callDeepSeek([
-      { role: "user", content: prompt }
-    ], 0.2, 4000); // Elite quality: detailed questions with sophisticated distractors, under 30s
+    const response = await callJsonModel([{ role: "user", content: prompt }], 4000);
 
     const json = parseAIResponse(response);
-    if (!Array.isArray(json)) return [];
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate quiz questions. Please try again.");
+    }
 
-    const processedQuestions = await Promise.all(json.map(async (q: any, index: number) => {
-      let imageUrl = q.imageUrl;
-
-      if (q.imagePrompt && !imageUrl) {
-        imageUrl = await generateImage(q.imagePrompt);
-      }
-
-      return {
-        id: `qz-${Date.now()}-${index}`,
-        imageUrl: imageUrl || undefined,
-        question: q.question || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        type: 'multiple-choice' as const
-      };
+    return json.map((q: any, index: number) => ({
+      id: `qz-${Date.now()}-${index}`,
+      question: q.question || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      explanation: q.explanation || '',
+      type: 'multiple-choice' as const
     }));
-
-    return processedQuestions;
   }, cacheKey);
 };
 
