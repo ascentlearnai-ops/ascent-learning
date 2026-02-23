@@ -13,7 +13,8 @@ const AdminPanel = () => {
                 { id: 'usr_2', email: 'pradyunpoorna@gmail.com', role: 'Scholar', lastActive: '1 hr ago', queries: 890, bandwidth: '890 MB' },
                 { id: 'usr_3', email: 'vishwak1801@gmail.com', role: 'Scholar', lastActive: '3 hrs ago', queries: 654, bandwidth: '450 MB' },
                 { id: 'usr_4', email: 'omdiwanji25@gmail.com', role: 'Scholar', lastActive: '1 day ago', queries: 412, bandwidth: '300 MB' },
-                { id: 'usr_5', email: 'new_pilot@gmail.com', role: 'Initiate', lastActive: 'Just now', queries: 15, bandwidth: '12 MB' },
+                { id: 'usr_5', email: 'jeremy.ajakpov@gmail.com', role: 'Scholar', lastActive: 'Just now', queries: 0, bandwidth: '0 MB' },
+                { id: 'usr_6', email: 'new_pilot@gmail.com', role: 'Initiate', lastActive: 'Just now', queries: 15, bandwidth: '12 MB' },
             ]);
             setLoading(false);
         }, 1000);

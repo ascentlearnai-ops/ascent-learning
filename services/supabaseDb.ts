@@ -122,7 +122,7 @@ export const getUserStats = async (): Promise<UserStats> => {
 };
 
 export const fetchUserTier = async (): Promise<'Initiate' | 'Scholar' | 'Admin'> => {
-  const scholarEmails = ['pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com', 'ascentlearnai@gmail.com'];
+  const scholarEmails = ['pradyunpoorna@gmail.com', 'vishwak1801@gmail.com', 'omdiwanji25@gmail.com', 'ascentlearnai@gmail.com', 'jeremy.ajakpov@gmail.com'];
 
   // Check Local Storage (Mock Login Support)
   if (typeof localStorage !== 'undefined') {
