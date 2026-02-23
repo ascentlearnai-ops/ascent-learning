@@ -578,40 +578,32 @@ Output ONLY a valid JSON array (no markdown, no extra text):
 // Generate multi-source quiz
 export const generateMultiSourceQuiz = async (aggregatedText: string, count: number): Promise<QuizQuestion[]> => {
   return smartGenerate(async () => {
-    const prompt = `Create ${count} comprehensive quiz questions from multiple sources.
-Content: ${aggregatedText.substring(0, 50000)}
+    const prompt = `Generate exactly ${count} multiple-choice quiz questions from the following content.
+Content: ${aggregatedText.substring(0, 40000)}
 
-Format as JSON array with same structure as before.
-Make questions challenging and cover different topics.
+Rules:
+- Test understanding and reasoning, NOT simple recall
+- 4 plausible answer choices (A, B, C, D); distractors from common misconceptions
+- correctAnswer: 0-based index (0=A, 1=B, 2=C, 3=D)
+- explanation: 2-3 sentences, why correct + why main distractor is wrong
+- Cover different topics across the content
 
-MAXIMUM REASONING DEPTH REQUIRED:
-- Break down explanations into structured, numbered step-by-step tutor logic.
-- Verify final answers meticulously. Prioritize extreme accuracy over speed.
-- Minimize hallucinations by strictly sticking to the provided sources.
+Output ONLY a valid JSON array (no markdown, no extra text):
+[{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}]`;
 
-Output ONLY the JSON array.`;
-
-    const response = await callDeepSeek([
-      { role: "user", content: prompt }
-    ], 0.3, 4000); // Elite quality for comprehensive exams
+    const response = await callJsonModel([{ role: "user", content: prompt }], 4000);
 
     const json = parseAIResponse(response);
-    if (!Array.isArray(json)) return [];
-
-    return await Promise.all(json.map(async (q: any, index: number) => {
-      let imageUrl = q.imageUrl;
-      if (q.imagePrompt && !imageUrl) {
-        imageUrl = await generateImage(q.imagePrompt);
-      }
-      return {
-        id: `qz-exam-${Date.now()}-${index}`,
-        imageUrl: imageUrl || undefined,
-        question: q.question || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        type: 'multiple-choice' as const
-      };
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate quiz questions. Please try again.");
+    }
+    return json.map((q: any, index: number) => ({
+      id: `qz-exam-${Date.now()}-${index}`,
+      question: q.question || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      explanation: q.explanation || '',
+      type: 'multiple-choice' as const
     }));
   });
 };
@@ -692,12 +684,14 @@ Rules:
 Output ONLY a valid JSON array (no markdown, no extra text):
 [${formatExample}]`;
 
-    const response = await callDeepSeek([
+    const response = await callJsonModel([
       { role: "user", content: prompt }
-    ], 0.3, 4000);
+    ], 4000);
 
     const json = parseAIResponse(response);
-    if (!Array.isArray(json) || json.length === 0) return [];
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate SAT questions. Please try again.");
+    }
 
     return json.map((q: any, index: number) => ({
       id: `sat-${type}-${Date.now()}-${index}`,
@@ -864,21 +858,22 @@ FINAL QUALITY STANDARDS:
 
   Output ONLY valid JSON.No markdown, no preamble.`;
 
-    const response = await callDeepSeek([
+    const response = await callJsonModel([
       { role: "user", content: prompt }
-    ], 0.2, 6500); // Elite quality: official AP exam-level questions
+    ], 6000);
 
     const json = parseAIResponse(response);
-    return Array.isArray(json)
-      ? json.map((q: any, index: number) => ({
-        id: `ap - ${subject} -${Date.now()} -${index} `,
-        question: q.question || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        type: 'multiple-choice' as const
-      }))
-      : [];
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate AP questions. Please try again.");
+    }
+    return json.map((q: any, index: number) => ({
+      id: `ap-${subject}-${Date.now()}-${index}`,
+      question: q.question || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      explanation: q.explanation || '',
+      type: 'multiple-choice' as const
+    }));
   }, cacheKey);
 };
 
