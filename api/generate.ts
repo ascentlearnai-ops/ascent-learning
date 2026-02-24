@@ -36,7 +36,9 @@ export default async function handler(req: any, res: any) {
 
     // 2. Fetch Keys — StepFun key for summaries/lessons/planner, Trinity key for quizzes/flashcards/questions
     const stepfunKey = process.env.STEPFUN_API_KEY || process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || process.env.API_KEY;
-    const trinityKey = process.env.ARCEE_API_KEY || process.env.TRINITY_API_KEY || stepfunKey;
+    // CRITICAL FIX: The user uploaded an Arcee API key, but we are querying OpenRouter. 
+    // OpenRouter requires an OpenRouter key, even for Arcee models. So we fall back to the working OpenRouter key.
+    const trinityKey = process.env.TRINITY_API_KEY || stepfunKey;
 
     if (!stepfunKey) {
         return res.status(500).json({ error: "Server Configuration Error: API Provider Key Missing." });

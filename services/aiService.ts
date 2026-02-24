@@ -2,10 +2,10 @@ import { Flashcard, QuizQuestion } from "../types";
 import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits } from "../utils/security";
 import axios from 'axios';
 
-// Model selection — All generation uses StepFun (Trinity is unreliable on free tier)
+// Model selection — Dual Setup
 const MODELS = {
   primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat
-  json: "stepfun/step-3.5-flash:free",              // quizzes, flashcards, SAT/AP questions (with JSON prompting)
+  json: "arcee-ai/trinity-large-preview:free",      // quizzes, flashcards, SAT/AP questions (with JSON prompting)
   fallback: "stepfun/step-3.5-flash:free"
 };
 
