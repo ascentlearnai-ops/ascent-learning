@@ -12,13 +12,12 @@ body {
   contain: style;
 }
 
-/* Performance Optimizations */
+/* Performance Optimizations — GPU hints only, no contain:layout (breaks scroll) */
 .animate-enter,
 .animate-fade-in,
 .animate-scale-in,
 .animate-slide-up {
   will-change: opacity, transform;
-  contain: layout style;
 }
 
 /* Reduce heavy backdrop-blur on low-end devices */

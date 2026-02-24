@@ -70,7 +70,7 @@ const SATPrep: React.FC<{ userTier: string }> = ({ userTier }) => {
           onClose={() => setActivePracticeSession(null)}
           onRegenerate={async () => {
             // Quick regen handler passed to overlay
-            const newQs = await generateSATQuestions(5, activePracticeSession.type);
+            const newQs = await generateSATQuestions(20, activePracticeSession.type);
             if (newQs && newQs.length > 0) {
               setActivePracticeSession({ type: activePracticeSession.type, questions: newQs });
             } else {
@@ -124,7 +124,7 @@ const GeneratorCard = ({ type, title, desc, icon, onGenerate }: { type: 'MATH' |
   const generate = async () => {
     setLoading(true);
     try {
-      const qs = await generateSATQuestions(5, type);
+      const qs = await generateSATQuestions(20, type);
       if (!qs || qs.length === 0) {
         throw new Error("Generation produced empty response");
       }
@@ -558,7 +558,7 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
       try {
         // Determine type based on skill context (simplified for this demo)
         const type = skill.title.includes('Math') || skill.promptContext.includes('equations') || skill.promptContext.includes('functions') ? 'MATH' : 'READING_WRITING';
-        const qs = await generateSATQuestions(5, type, skill.promptContext);
+        const qs = await generateSATQuestions(20, type, skill.promptContext);
         setQuestions(qs);
         setQuizStarted(true);
       } catch (e) {
