@@ -74,7 +74,7 @@ const callDeepSeek = async (
   maxTokens: number = 4000,
   attemptFallback: boolean = true
 ): Promise<string> => {
-  const safeMaxTokens = Math.min(maxTokens, 6000);
+  const safeMaxTokens = Math.min(maxTokens, 8000);
 
   // Production: Use deployed backend proxy
   const speedOptimizedMessages = messages.map(m => ({
@@ -161,7 +161,7 @@ const callJsonModel = async (
         temperature: 0.3,
         max_tokens: Math.min(maxTokens, 8000),
       },
-      { timeout: 90000 }
+      { timeout: 120000 } // 2 min timeout for large sets
     );
     if (response.data?.choices?.length > 0) {
       const raw = response.data.choices[0].message.content;
@@ -170,8 +170,17 @@ const callJsonModel = async (
     }
     throw new Error("Empty response from JSON generation.");
   } catch (error: any) {
-    console.error("JSON model call failed:", error.message);
-    throw error;
+    console.error("JSON generation failed:", error.message);
+    // Fallback: try callDeepSeek with JSON instructions embedded in user message
+    console.log("Attempting fallback via callDeepSeek with JSON instructions...");
+    const fallbackMessages = messages.map((m, i) => {
+      if (i === messages.length - 1 && m.role === 'user') {
+        return { ...m, content: m.content + "\n\nYou MUST output ONLY valid JSON. No markdown, no code fences. Start with [ or {." };
+      }
+      return m;
+    });
+    const fallbackResult = await callDeepSeek(fallbackMessages, 0.3, maxTokens, false);
+    return extractJSON(fallbackResult);
   }
 };
 
@@ -713,7 +722,7 @@ Output ONLY a valid JSON array (no markdown, no extra text):
 
     const response = await callJsonModel([
       { role: "user", content: prompt }
-    ], 4000);
+    ], 6000);
 
     const json = parseAIResponse(response);
     if (!Array.isArray(json) || json.length === 0) {
