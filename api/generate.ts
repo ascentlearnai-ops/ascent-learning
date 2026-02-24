@@ -34,19 +34,19 @@ export default async function handler(req: any, res: any) {
         }
     }
 
-    // 2. Fetch Keys — primary key for stepfun/HTML, arcee key for JSON generation
-    const primaryKey = process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
-    const arceeKey = process.env.ARCEE_API_KEY || primaryKey; // Falls back to primary if not set
+    // 2. Fetch Keys — StepFun key for summaries/lessons/planner, Trinity key for quizzes/flashcards/questions
+    const stepfunKey = process.env.STEPFUN_API_KEY || process.env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || process.env.API_KEY;
+    const trinityKey = process.env.ARCEE_API_KEY || process.env.TRINITY_API_KEY || stepfunKey;
 
-    if (!primaryKey) {
+    if (!stepfunKey) {
         return res.status(500).json({ error: "Server Configuration Error: API Provider Key Missing." });
     }
 
     // 3. Process Request
     const { model, messages, temperature, max_tokens } = req.body;
 
-    // Route to correct API key based on model
-    const apiKey = (model && model.startsWith("arcee-ai/")) ? arceeKey : primaryKey;
+    // Route to correct API key based on model prefix
+    const apiKey = (model && model.startsWith("arcee-ai/")) ? trinityKey : stepfunKey;
 
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {

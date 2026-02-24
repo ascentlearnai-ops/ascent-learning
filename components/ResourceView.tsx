@@ -204,11 +204,17 @@ const SummaryTab = ({ content }: { content: string }) => {
   const styledContent = content
     .replace(/<h2>/g, '<h2 class="text-xl md:text-2xl font-bold mb-6 mt-10 text-white flex items-center gap-3"><span class="w-1 h-6 bg-primary-500 rounded-full"></span>')
     .replace(/<\/h2>/g, '</h2>')
+    .replace(/<h3>/g, '<h3 class="text-lg md:text-xl font-semibold text-zinc-100 mt-8 mb-4 pl-4 border-l-2 border-primary-500/40">')
     .replace(/<p>/g, '<p class="text-zinc-300 leading-7 md:leading-8 mb-6 text-base md:text-lg font-light tracking-wide">')
     .replace(/<ul>/g, '<ul class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5">')
+    .replace(/<ol>/g, '<ol class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5 list-decimal list-inside">')
     .replace(/<li>/g, '<li class="flex items-start gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0"></span><span>')
     .replace(/<\/li>/g, '</span></li>')
     .replace(/<strong>/g, '<strong class="text-primary-300 font-bold border-b border-primary-500/30 pb-0.5">')
+    .replace(/<em>/g, '<em class="text-zinc-200 not-italic font-medium">')
+    .replace(/<pre>/g, '<pre class="bg-black/50 p-6 rounded-2xl border border-white/10 text-white font-mono text-sm overflow-x-auto mb-8 whitespace-pre-wrap">')
+    .replace(/<code>/g, '<code class="bg-primary-900/20 text-primary-300 px-2 py-1 rounded font-mono text-sm border border-primary-500/20">')
+    .replace(/<blockquote>/g, '<blockquote class="border-l-4 border-primary-500/50 pl-6 italic text-zinc-400 my-8 py-2 bg-primary-500/5 rounded-r-xl">')
     ;
 
   const handleCopy = () => {

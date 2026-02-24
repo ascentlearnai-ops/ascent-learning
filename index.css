@@ -8,6 +8,31 @@ body {
   background-color: #020202;
   color: white;
   overflow-x: hidden;
+  /* Performance: reduce paint areas */
+  contain: style;
+}
+
+/* Performance Optimizations */
+.animate-enter,
+.animate-fade-in,
+.animate-scale-in,
+.animate-slide-up {
+  will-change: opacity, transform;
+  contain: layout style;
+}
+
+/* Reduce heavy backdrop-blur on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+
+  .animate-enter,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-up,
+  .animate-float {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 /* Typography Overrides */

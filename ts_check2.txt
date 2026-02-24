@@ -1,0 +1,1 @@
+components/UploadModal.tsx(10,30): error TS2307: Cannot find module './MiniWordGame' or its corresponding type declarations.

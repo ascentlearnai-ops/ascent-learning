@@ -2,10 +2,10 @@ import { Flashcard, QuizQuestion } from "../types";
 import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits } from "../utils/security";
 import axios from 'axios';
 
-// Model selection - prioritize speed and quality using OpenRouter free models
+// Model selection — StepFun for summaries/lessons/planner, Trinity for quizzes/flashcards/questions
 const MODELS = {
-  primary: "stepfun/step-3.5-flash:free",   // summaries, lessons (HTML output)
-  json: "arcee-ai/arcee-blitz:free",         // quizzes, flashcards, SAT questions (JSON output)
+  primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat (HTML output)
+  json: "arcee-ai/trinity-large-preview:free",      // quizzes, flashcards, SAT/AP questions (JSON output)
   fallback: "stepfun/step-3.5-flash:free"
 };
 
@@ -121,30 +121,42 @@ const callDeepSeek = async (
   }
 };
 
-// Dedicated JSON-output model (Arcee AI) — for quizzes, flashcards, SAT questions
+// Dedicated JSON-output model (Trinity by Arcee AI) — for quizzes, flashcards, SAT/AP questions
 const callJsonModel = async (
   messages: Array<{ role: string; content: string }>,
   maxTokens: number = 4000
 ): Promise<string> => {
   try {
+    // Append explicit JSON instruction for Trinity
+    const jsonMessages = messages.map((m, i) => {
+      if (i === messages.length - 1 && m.role === 'user') {
+        return {
+          ...m,
+          content: m.content + "\n\nCRITICAL: Output ONLY raw valid JSON. No markdown code fences, no preamble, no extra text. Start directly with [ or {."
+        };
+      }
+      return m;
+    });
+
     const response = await axios.post(
       "/api/generate",
       {
         model: MODELS.json,
-        messages,
-        temperature: 0.2, // Low temp for reliable JSON
-        max_tokens: Math.min(maxTokens, 6000),
+        messages: jsonMessages,
+        temperature: 0.3, // Slightly higher for better question variety while maintaining JSON structure
+        max_tokens: Math.min(maxTokens, 8000),
       },
-      { timeout: 60000 }
+      { timeout: 90000 } // 90s timeout for longer quiz generation
     );
     if (response.data?.choices?.length > 0) {
+      console.log(`✓ Generated with Trinity Large Preview (${MODELS.json})`);
       return response.data.choices[0].message.content;
     }
-    throw new Error("Empty response from JSON model.");
+    throw new Error("Empty response from Trinity model.");
   } catch (error: any) {
-    // Fall back to primary model if Arcee fails
-    console.warn("JSON model failed, falling back to primary:", error.message);
-    return callDeepSeek(messages, 0.2, maxTokens, false);
+    // Fall back to StepFun model if Trinity fails
+    console.warn("Trinity model failed, falling back to StepFun:", error.message);
+    return callDeepSeek(messages, 0.3, maxTokens, false);
   }
 };
 
