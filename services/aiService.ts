@@ -2,10 +2,10 @@ import { Flashcard, QuizQuestion } from "../types";
 import { generationRateLimiter, chatSpamLimiter, dailyChatLimiter, getTierLimits } from "../utils/security";
 import axios from 'axios';
 
-// Model selection — StepFun for summaries/lessons/planner, Trinity for quizzes/flashcards/questions
+// Model selection — All generation uses StepFun (Trinity is unreliable on free tier)
 const MODELS = {
-  primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat (HTML output)
-  json: "arcee-ai/trinity-large-preview:free",      // quizzes, flashcards, SAT/AP questions (JSON output)
+  primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat
+  json: "stepfun/step-3.5-flash:free",              // quizzes, flashcards, SAT/AP questions (with JSON prompting)
   fallback: "stepfun/step-3.5-flash:free"
 };
 
@@ -13,6 +13,19 @@ const MODELS = {
 let currentModel = MODELS.primary;
 
 // Keys are now securely managed on the backend proxy
+
+// ── Helper: Extract JSON from messy AI output ──
+const extractJSON = (text: string): string => {
+  let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const arrStart = cleaned.indexOf('[');
+  const objStart = cleaned.indexOf('{');
+  let start = -1;
+  if (arrStart >= 0 && objStart >= 0) start = Math.min(arrStart, objStart);
+  else if (arrStart >= 0) start = arrStart;
+  else if (objStart >= 0) start = objStart;
+  if (start > 0) cleaned = cleaned.substring(start);
+  return cleaned;
+};
 
 // Response cache for optimization
 const responseCache = new Map<string, any>();
@@ -61,21 +74,17 @@ const callDeepSeek = async (
   maxTokens: number = 4000,
   attemptFallback: boolean = true
 ): Promise<string> => {
+  const safeMaxTokens = Math.min(maxTokens, 6000);
+
+  // Production: Use deployed backend proxy
+  const speedOptimizedMessages = messages.map(m => ({
+    ...m,
+    content: m.content.length > 15000
+      ? m.content.substring(0, 15000) + "\n[Content trimmed for speed]"
+      : m.content
+  }));
+
   try {
-    // Append a forceful speed constraint and readability constraint to the latest user message
-    const speedOptimizedMessages = messages.map((m, i) => {
-      if (i === messages.length - 1 && m.role === 'user') {
-        return {
-          ...m,
-          content: m.content + "\n\nCRITICAL SYSTEM LIMITS:\n1. Keep your output clean and strictly follow the JSON or HTML format requested.\n2. Do NOT output markdown code blocks formatting (e.g. ```json), just output the raw parsed struct.\n3. MANDATORY TONE: You MUST use an 8th-grade reading level. Keep vocabulary simple and easy to digest, but you must retain 100% of all technical information, edge cases and logic."
-        };
-      }
-      return m;
-    });
-
-    // Cap the maximum tokens to force faster termination even if reasoning loops
-    const safeMaxTokens = Math.min(maxTokens, 8000);
-
     const response = await axios.post(
       "/api/generate",
       {
@@ -121,42 +130,48 @@ const callDeepSeek = async (
   }
 };
 
-// Dedicated JSON-output model (Trinity by Arcee AI) — for quizzes, flashcards, SAT/AP questions
+// JSON-output caller — uses StepFun with explicit JSON prompting for quizzes, flashcards, questions
 const callJsonModel = async (
   messages: Array<{ role: string; content: string }>,
   maxTokens: number = 4000
 ): Promise<string> => {
-  try {
-    // Append explicit JSON instruction for Trinity
-    const jsonMessages = messages.map((m, i) => {
-      if (i === messages.length - 1 && m.role === 'user') {
+  // Replace any existing system message with JSON-focused one
+  const jsonMessages = [
+    {
+      role: 'system',
+      content: 'You are a JSON-only output machine. You MUST respond with ONLY valid JSON — no markdown, no code fences, no explanations, no text before or after. Start your response directly with [ or {.'
+    },
+    ...messages.filter(m => m.role !== 'system').map((m, i, arr) => {
+      if (i === arr.length - 1 && m.role === 'user') {
         return {
           ...m,
-          content: m.content + "\n\nCRITICAL: Output ONLY raw valid JSON. No markdown code fences, no preamble, no extra text. Start directly with [ or {."
+          content: m.content + "\n\nRESPOND WITH RAW JSON ONLY. No markdown. No ```json. Start directly with [ or {."
         };
       }
       return m;
-    });
+    })
+  ];
 
+  try {
     const response = await axios.post(
       "/api/generate",
       {
         model: MODELS.json,
         messages: jsonMessages,
-        temperature: 0.3, // Slightly higher for better question variety while maintaining JSON structure
+        temperature: 0.3,
         max_tokens: Math.min(maxTokens, 8000),
       },
-      { timeout: 90000 } // 90s timeout for longer quiz generation
+      { timeout: 90000 }
     );
     if (response.data?.choices?.length > 0) {
-      console.log(`✓ Generated with Trinity Large Preview (${MODELS.json})`);
-      return response.data.choices[0].message.content;
+      const raw = response.data.choices[0].message.content;
+      console.log(`✓ JSON generated with StepFun (${MODELS.json})`);
+      return extractJSON(raw);
     }
-    throw new Error("Empty response from Trinity model.");
+    throw new Error("Empty response from JSON generation.");
   } catch (error: any) {
-    // Fall back to StepFun model if Trinity fails
-    console.warn("Trinity model failed, falling back to StepFun:", error.message);
-    return callDeepSeek(messages, 0.3, maxTokens, false);
+    console.error("JSON model call failed:", error.message);
+    throw error;
   }
 };
 

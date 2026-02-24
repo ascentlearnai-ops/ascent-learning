@@ -61,9 +61,12 @@ const APCenter: React.FC<APCenterProps> = ({ onExamReady }) => {
     try {
       const topicString = `AP Course: ${selectedCourse?.title}. Unit: ${unit.title}. Topics: ${unit.topics}.`;
 
-      const summary = await generateAPLesson(selectedCourse?.title || '', unit.title, unit.topics);
-      const quiz = await generateAPQuestions(10, selectedCourse?.title || '', unit.title, 'medium');
-      const flashcards = await generateFlashcards(topicString);
+      // Parallel generation — all 3 run at the same time for speed
+      const [summary, quiz, flashcards] = await Promise.all([
+        generateAPLesson(selectedCourse?.title || '', unit.title, unit.topics),
+        generateAPQuestions(10, selectedCourse?.title || '', unit.title, 'medium'),
+        generateFlashcards(topicString)
+      ]);
 
       const resource: Resource = {
         id: `ap-${Date.now()}`,
