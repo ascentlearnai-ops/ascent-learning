@@ -825,48 +825,87 @@ const SkillModal = ({ skill, content, initialQuestions = [], loading, error, onR
 // --- Full Exam — In Development ---
 const FullExamInterface = () => {
   return (
-    <div className="flex flex-col items-center justify-center py-20 animate-enter">
-      <div className="max-w-2xl w-full text-center">
-        {/* Icon */}
-        <div className="w-28 h-28 rounded-full bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-10 shadow-[0_0_60px_rgba(79,70,229,0.15)]">
-          <Clock size={44} className="text-indigo-400" />
-        </div>
+    <div className="relative flex flex-col items-center justify-center min-h-[60vh] py-20 px-4 animate-enter overflow-hidden rounded-3xl border border-white/5 bg-[#050505] shadow-2xl mt-4">
+      {/* Background ambient glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-bold uppercase tracking-widest mb-8">
-          <AlertTriangle size={13} />
-          In Development
-        </div>
-
-        {/* Title */}
-        <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Full SAT Simulation</h2>
-        <p className="text-zinc-400 text-lg leading-relaxed max-w-lg mx-auto mb-12">
-          We're building a comprehensive, timed SAT simulation with adaptive difficulty, detailed analytics, and score prediction. This feature is coming soon.
-        </p>
-
-        {/* Feature Preview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          <div className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/5">
-            <Clock size={20} className="text-blue-400 mb-3" />
-            <h4 className="text-sm font-bold text-white mb-1">Timed Modules</h4>
-            <p className="text-xs text-zinc-500">Real SAT timing with section breaks</p>
+      <div className="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row items-center gap-16">
+        {/* Left Side: Art & Title */}
+        <div className="flex-1 text-center lg:text-left">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+            Feature Preview
           </div>
-          <div className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/5">
-            <Target size={20} className="text-purple-400 mb-3" />
-            <h4 className="text-sm font-bold text-white mb-1">Adaptive Difficulty</h4>
-            <p className="text-xs text-zinc-500">Questions adjust to your level</p>
-          </div>
-          <div className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/5">
-            <Brain size={20} className="text-emerald-400 mb-3" />
-            <h4 className="text-sm font-bold text-white mb-1">Score Prediction</h4>
-            <p className="text-xs text-zinc-500">AI-powered SAT score estimates</p>
+
+          <h2 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 mb-6 tracking-tighter">
+            Full SAT <br />
+            <span className="text-gradient-blue bg-clip-text text-transparent">Simulation</span>
+          </h2>
+
+          <p className="text-zinc-400 text-lg md:text-xl leading-relaxed max-w-md mx-auto lg:mx-0 font-light mb-8">
+            A bleeding-edge testing environment featuring real-time adaptive difficulty, extreme timing precision, and deep analytics.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+            <button disabled className="px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-zinc-500 font-medium cursor-not-allowed flex items-center gap-3 transition-colors hover:bg-white/10">
+              <Lock size={18} />
+              Unlocks Soon
+            </button>
+            <p className="text-zinc-600 text-[10px] sm:text-xs font-mono uppercase tracking-widest w-32 text-center sm:text-left mt-2 sm:mt-0">
+              Stay tuned for updates
+            </p>
           </div>
         </div>
 
-        {/* CTA */}
-        <p className="text-zinc-600 text-xs font-mono uppercase tracking-widest">
-          Use Practice Generators and Topics & Skills in the meantime
-        </p>
+        {/* Right Side: Feature Cards */}
+        <div className="flex-1 w-full relative mt-12 lg:mt-0">
+          {/* Decorative dashed line connecting cards */}
+          <div className="absolute left-6 top-10 bottom-10 w-px border-l border-dashed border-white/10 hidden sm:block"></div>
+
+          <div className="space-y-4">
+            {/* Feature 1 */}
+            <div className="group relative bg-[#0A0A0B] border border-white/5 p-6 rounded-2xl hover:border-indigo-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(99,102,241,0.1)] hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"></div>
+              <div className="relative flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                  <Clock size={20} className="text-indigo-400" />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold mb-1 tracking-tight">Adaptive Pacing</h4>
+                  <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">Dynamic timer constraints that mimic official College Board testing stress and section rules.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="group relative bg-[#0A0A0B] border border-white/5 p-6 rounded-2xl hover:border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(168,85,247,0.1)] hover:-translate-y-1 ml-0 sm:ml-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"></div>
+              <div className="relative flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                  <Target size={20} className="text-purple-400" />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold mb-1 tracking-tight">Item Response Theory</h4>
+                  <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">Questions dynamically scale in difficulty based on your real-time performance to benchmark your true score.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="group relative bg-[#0A0A0B] border border-white/5 p-6 rounded-2xl hover:border-emerald-500/30 transition-all duration-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] hover:-translate-y-1 ml-0 sm:ml-16">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none"></div>
+              <div className="relative flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Brain size={20} className="text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="text-white font-bold mb-1 tracking-tight">AI Predictive Scoring</h4>
+                  <p className="text-zinc-500 text-sm leading-relaxed max-w-sm">Proprietary models analyze your historical patterns against thousands of exams to predict your official score.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
