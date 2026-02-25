@@ -436,19 +436,19 @@ export const generateSummary = async (text: string): Promise<string> => {
     let maxTokens = 4000;
 
     if (wordCount < 1000) {
-      summaryGuidance = 'Focused summary (AT LEAST 650 words): Focus on core concepts only. Do not make it shorter than 650 words.';
+      summaryGuidance = 'Target Length: Minimum 400 words (Focused summary). Focus on core concepts only.';
       termGuidance = 'Identify 10-15 core academic terms critical to understanding.';
       maxTokens = 2000;
     } else if (wordCount < 5000) {
-      summaryGuidance = 'Standard summary (AT LEAST 1000-1500 words): Cover main ideas, key details, and significance.';
+      summaryGuidance = 'Target Length: Minimum 400 words up to 1500 words (Standard summary). Cover main ideas, key details, and significance.';
       termGuidance = 'Identify 20-30 advanced academic terms critical to understanding.';
       maxTokens = 3500;
     } else if (wordCount < 10000) {
-      summaryGuidance = 'Comprehensive summary (AT LEAST 2000-3000 words): Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
+      summaryGuidance = 'Target Length: Minimum 400 words up to 3000 words (Comprehensive summary). Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
       termGuidance = 'Identify 30-50 advanced academic terms critical to understanding.';
       maxTokens = 5000;
     } else {
-      summaryGuidance = 'Extensive summary (AT LEAST 3000-4000 words, increasing with pdf size): Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
+      summaryGuidance = 'Target Length: Minimum 400 words up to 4000 words (Extensive summary). Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
       termGuidance = 'Identify 40-60 advanced academic terms critical to understanding.';
       maxTokens = 6000;
     }
@@ -496,29 +496,37 @@ HTML FORMATTING (NO MARKDOWN):
 - Organize complex information with bulleted lists when appropriate
 - NO markdown syntax (no ##, **, etc.)
 
-STRUCTURAL TEMPLATE:
-<h2>Overview and Context</h2>
-<p>[Brief introduction establishing significance and scope]</p>
+STRUCTURAL RULES:
+1. One function per section (learning or drilling)
+2. One idea per line: Bullets & short lines > chunky paragraphs
+3. Universal Template to follow strictly:
 
-<h2>[Major Topic / Theme 1]</h2>
+<h2>Key Ideas</h2>
+<ul><li>[Idea]</li></ul>
+
+<h2>Definitions</h2>
+<ul><li><strong>[TERM]:</strong> [Definition]</li></ul>
+
+<h2>Formulas / Processes (if applicable)</h2>
 <ul>
-  <li><strong>[Key Concept/Term]</strong>: [Detailed but concise explanation]</li>
-  <li><strong>[Important Detail]</strong>: [Evidence or specific facts supporting the concept]</li>
-  <li><strong>[Analysis]</strong>: [Why this matters, cause/effect, or historical/technical significance]</li>
+  <li><strong>Concept:</strong> [Name]
+    <ul>
+      <li><strong>Formula:</strong> [Details]</li>
+      <li><strong>When to use:</strong> [Context]</li>
+      <li><strong>Common trap:</strong> [Trap]</li>
+    </ul>
+  </li>
 </ul>
 
-<h2>[Major Topic / Theme 2]</h2>
-<ul>
-  <li><strong>[Key Concept/Term]</strong>: [Detailed but concise explanation]</li>
-  <li><strong>[Important Detail]</strong>: [Evidence or specific facts supporting the concept]</li>
-</ul>
+<h2>Examples</h2>
+<p><strong>Q:</strong> [Question]</p>
+<p><strong>A:</strong> [Answer]</p>
 
-<h2>Key Takeaways & Summary</h2>
-<ul>
-  <li>[Synthesis point 1 connecting the major themes]</li>
-  <li>[Synthesis point 2 establishing real-world or academic impact]</li>
-  <li>[Synthesis point 3]</li>
-</ul>
+<h2>Common Traps / Misconceptions</h2>
+<ul><li>[Trap 1]</li></ul>
+
+<h2>Practice Questions</h2>
+<p>1) [Question]<br>A) [Option]<br>B) [Option]<br>C) [Option]<br>D) [Option]</p>
 
 OUTPUT QUALITY STANDARDS:
 ✓ Comparable to Khan Academy, Kaplan, Princeton Review premium content
@@ -651,26 +659,86 @@ export const generateSATLesson = async (skillContext: string): Promise<string> =
   return smartGenerate(async () => {
     const prompt = `Write a comprehensive SAT prep study guide for: ${skillContext}
 
-Output ONLY valid HTML starting immediately with <h2>. No preamble, no meta-commentary, no repeated instructions.
+Target Length: Minimum 400 words.
 
-Structure:
-<h2>Concept Overview</h2>
-<p>[what this skill is and why it appears on the SAT]</p>
+Output ONLY valid HTML starting immediately with <h2>. No preamble, no repeated instructions.
 
-<h2>Official SAT Rules & Mechanics</h2>
-<p>[specific rules, formulas, or patterns the SAT tests]</p>
+MISSION: Create structured notes designed so an AI can "see" the structure without guessing.
+- One function per section: A section is either for learning (Key Ideas, Definitions) or for drilling (Examples, Practice Questions, Traps).
+- One idea per line: Use bullets and short lines rather than chunky paragraphs.
 
-<h2>Step-by-Step Strategy</h2>
-<ol><li>[step 1]</li><li>[step 2]</li>...</ol>
+Use this exact structural template, converting it strictly to HTML tags (<h2>, <h3>, <p>, <ul>, <li>, <strong>, etc.):
 
-<h2>Common Traps & Mistakes</h2>
-<ul><li>[trap 1]</li><li>[trap 2]</li></ul>
+${skillContext.toLowerCase().includes('math') || skillContext.toLowerCase().includes('equations') || skillContext.toLowerCase().includes('functions') || skillContext.toLowerCase().includes('algebra') ?
+        `<h2>[Topic Name]</h2>
+<p><strong>Definition:</strong> [A clear definition]</p>
+<p><strong>Key forms:</strong></p>
+<ul>
+  <li>[Form 1]</li>
+  <li>[Form 2]</li>
+</ul>
+<p><strong>When it appears on SAT:</strong> [word problems, geometry intersections, etc.]</p>
+<p><strong>Concept checklist:</strong></p>
+<ul>
+  <li>[Checklist item 1]</li>
+  <li>[Checklist item 2]</li>
+</ul>
+<p><strong>Example 1 (easy):</strong></p>
+<p>Q: [Question]</p>
+<p>A: [Answer steps]</p>
+<p><strong>Example 2 (hard):</strong></p>
+<p>Q: [Question]</p>
+<p>A: [Answer steps]</p>
+<p><strong>Common traps:</strong></p>
+<ul>
+  <li>[Trap 1]</li>
+  <li>[Trap 2]</li>
+</ul>` :
+        `<h2>Passage / Topic Overview</h2>
+<ul>
+  <li><strong>Passage summary:</strong> [Summary]</li>
+  <li><strong>Main idea:</strong> [Main idea]</li>
+  <li><strong>Author's claim:</strong> [Claim]</li>
+  <li><strong>Tone:</strong> [Tone]</li>
+  <li><strong>Purpose:</strong> [Purpose]</li>
+  <li><strong>Key evidence:</strong>
+    <ul>
+      <li>[Evidence 1]</li>
+      <li>[Evidence 2]</li>
+    </ul>
+  </li>
+  <li><strong>Audience:</strong> [Audience]</li>
+  <li><strong>Common wrong answer types:</strong>
+    <ul>
+      <li>[Trap 1]</li>
+      <li>[Trap 2]</li>
+    </ul>
+  </li>
+</ul>
 
-<h2>Advanced Edge Cases</h2>
-<p>[harder variations or exceptions]</p>
-
-<h2>Practice Tips</h2>
-<p>[how to get better at this specific skill]</p>
+<h2>SAT RW Question Types</h2>
+<h3>[Question Type Name]</h3>
+<ul>
+  <li><strong>What it asks:</strong> [Description]</li>
+  <li><strong>Strategy:</strong>
+    <ul>
+      <li>[Step 1]</li>
+      <li>[Step 2]</li>
+    </ul>
+  </li>
+  <li><strong>Look fors:</strong>
+    <ul>
+      <li>[Sign 1]</li>
+      <li>[Sign 2]</li>
+    </ul>
+  </li>
+  <li><strong>Traps:</strong>
+    <ul>
+      <li>[Trap 1]</li>
+      <li>[Trap 2]</li>
+    </ul>
+  </li>
+</ul>`}
 
 Wrap key terms in: <span class="interactive-term" data-def="concise definition">Term</span>
 Use <strong> for important concepts. Be thorough and specific to SAT content. Output ONLY HTML.`;
@@ -762,27 +830,68 @@ export const generateAPLesson = async (subject: string, unit: string, topic: str
   return smartGenerate(async () => {
     const prompt = `Generate a massively comprehensive AP ${subject} lesson for ${unit}: ${topic}
 
-Target Length: 4000 - 5000 words. Make it extremely detailed and much longer than a standard summary. Absolutely do not make it short.
-  MISSION: Create college - level study materials matching official College Board AP standards.
+Target Length: Minimum 400 words up to 5000 words. Make it extremely detailed and much longer than a standard summary. Absolutely do not make it short.
+MISSION: Create college-level study materials matching official College Board AP standards structured for AI readability.
 
 CONTENT REQUIREMENTS:
 - Extensive detail, rigorous academic vocabulary.
 - Focus on conceptual understanding, causation, and deeply interconnected analysis.
 - Provide AP level frameworks for analysis (e.g., PERSIA for history).
 
-ORGANIZATION STRUCTURE:
-<h2>Learning Objectives </h2>
-  < h2 > Historical / Conceptual Context </h2>
-    < h2 > Core Content & Deep Analysis </h2>
-    [Detailed, exhaustive subtopics and step - by - step logic.Do not skimp on information]
+STRUCTURAL RULES:
+- Consistent headings (h2, h3).
+- One function per section (learning or drilling).
+- One idea per line: Bullets > paragraphs.
 
-<h2>Key Concepts and Vocabulary </h2>
-  - Wrap 20 + critical terms in: <span class="interactive-term" data - def="precise definition" > Term </span>
+Use this universal template formatted strictly as HTML:
 
-    < h2 > Common Misconceptions & Exam Preparation </h2>
+<h2>Key Ideas</h2>
+<ul><li>[Idea 1]</li><li>[Idea 2]</li></ul>
 
-HTML FORMATTING(STRICTLY NO MARKDOWN):
-- Use only semantic HTML(<h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>)
+<h2>Definitions</h2>
+<ul><li><strong>[TERM]:</strong> [Definition]</li></ul>
+
+<h2>Formulas / Processes (if applicable)</h2>
+<ul>
+  <li><strong>Concept:</strong> [Name]
+    <ul>
+      <li><strong>Formula/Process:</strong> [Details]</li>
+      <li><strong>When to use:</strong> [Context]</li>
+      <li><strong>Common trap:</strong> [Trap]</li>
+    </ul>
+  </li>
+</ul>
+
+<h2>Facts & Connections Layer</h2>
+<ul>
+  <li><strong>[Event/Concept]:</strong> [Date/Context] - [Significance]</li>
+  <li><strong>[Person/Entity]:</strong> [Role] - [Why important]</li>
+</ul>
+<h3>Connections / Themes</h3>
+<ul>
+  <li>[Theme 1] &rarr; [Impact/Result]</li>
+</ul>
+
+<h2>Reasoning Skills & Application</h2>
+<ul>
+  <li><strong>Causation:</strong> [Example]</li>
+  <li><strong>Continuity and change:</strong> [Example]</li>
+  <li><strong>Comparison:</strong> [Example]</li>
+</ul>
+
+<h2>Examples</h2>
+<p><strong>Q:</strong> [Question]</p>
+<p><strong>A:</strong> [Answer]</p>
+
+<h2>Common Traps / Misconceptions</h2>
+<ul><li>[Trap]</li></ul>
+
+<h2>Practice Questions</h2>
+<p>1) [Question]<br>A) [Option]<br>B) [Option]<br>C) [Option]<br>D) [Option]</p>
+
+HTML FORMATTING (STRICTLY NO MARKDOWN):
+- Use only semantic HTML (<h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>)
+- Wrap 20+ critical terms in: <span class="interactive-term" data-def="precise definition">Term</span>
 Output ONLY HTML.`;
 
     const response = await callDeepSeek([

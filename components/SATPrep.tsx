@@ -468,6 +468,7 @@ const PracticeSessionOverlay = ({ questions, type, onClose, onRegenerate }: { qu
 const TopicsSection = () => {
   const [selectedSkill, setSelectedSkill] = useState<SATSkill | null>(null);
   const [lessonContent, setLessonContent] = useState<string | null>(null);
+  const [lessonQuestions, setLessonQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -475,10 +476,16 @@ const TopicsSection = () => {
     setSelectedSkill(skill);
     setLoading(true);
     setLessonContent(null);
+    setLessonQuestions([]);
     setLoadError(null);
     try {
-      const lesson = await generateSATLesson(skill.title + '. ' + (skill.promptContext || ''));
+      const type = skill.title.includes('Math') || skill.promptContext.includes('equations') || skill.promptContext.includes('functions') ? 'MATH' : 'READING_WRITING';
+      const [lesson, qs] = await Promise.all([
+        generateSATLesson(skill.title + '. ' + (skill.promptContext || '')),
+        generateSATQuestions(5, type, skill.promptContext) // Reduced to 5 as requested
+      ]);
       setLessonContent(lesson);
+      setLessonQuestions(qs);
     } catch (e: any) {
       console.error('Lesson load failed:', e);
       setLoadError(e?.message || 'Unable to load lesson. Check your API key and try again.');
@@ -529,10 +536,11 @@ const TopicsSection = () => {
         <SkillModal
           skill={selectedSkill}
           content={lessonContent}
+          initialQuestions={lessonQuestions}
           loading={loading}
           error={loadError}
           onRetry={() => handleSkillClick(selectedSkill)}
-          onClose={() => { setSelectedSkill(null); setLoadError(null); }}
+          onClose={() => { setSelectedSkill(null); setLoadError(null); setLessonQuestions([]); }}
         />
       )}
     </div>
@@ -540,11 +548,17 @@ const TopicsSection = () => {
 };
 
 // Reusable Skill Modal
-const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skill: SATSkill, content: string | null, loading: boolean, error?: string | null, onRetry?: () => void, onClose: () => void }) => {
+const SkillModal = ({ skill, content, initialQuestions = [], loading, error, onRetry, onClose }: { skill: SATSkill, content: string | null, initialQuestions?: QuizQuestion[], loading: boolean, error?: string | null, onRetry?: () => void, onClose: () => void }) => {
   const [tab, setTab] = useState<'study' | 'quiz'>('study');
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions);
   const [qLoading, setQLoading] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+
+  useEffect(() => {
+    if (initialQuestions.length > 0) {
+      setQuestions(initialQuestions);
+    }
+  }, [initialQuestions]);
 
   // Embedded Quiz State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -553,12 +567,12 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
 
   const startQuiz = async () => {
     setTab('quiz');
-    if (questions.length === 0) {
+    if (questions.length === 0 && !loading) {
       setQLoading(true);
       try {
         // Determine type based on skill context (simplified for this demo)
         const type = skill.title.includes('Math') || skill.promptContext.includes('equations') || skill.promptContext.includes('functions') ? 'MATH' : 'READING_WRITING';
-        const qs = await generateSATQuestions(20, type, skill.promptContext);
+        const qs = await generateSATQuestions(5, type, skill.promptContext);
         setQuestions(qs);
         setQuizStarted(true);
       } catch (e) {
@@ -566,6 +580,8 @@ const SkillModal = ({ skill, content, loading, error, onRetry, onClose }: { skil
       } finally {
         setQLoading(false);
       }
+    } else {
+      setQuizStarted(true);
     }
   };
 
