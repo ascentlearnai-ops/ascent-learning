@@ -5,7 +5,7 @@ import axios from 'axios';
 // Model selection — Dual Setup
 const MODELS = {
   primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat
-  json: "arcee-ai/trinity-large-preview:free",      // quizzes, flashcards, SAT/AP questions (with JSON prompting)
+  json: "stepfun/step-3.5-flash:free",             // Switched to faster model to reduce overthinking for JSON
   fallback: "stepfun/step-3.5-flash:free"
 };
 
@@ -496,16 +496,24 @@ HTML FORMATTING (NO MARKDOWN):
 - Organize complex information with bulleted lists when appropriate
 - NO markdown syntax (no ##, **, etc.)
 
-STRUCTURAL RULES:
-1. One function per section (learning or drilling)
-2. One idea per line: Bullets & short lines > chunky paragraphs
-3. Universal Template to follow strictly:
+CORE PRINCIPLES:
+- Design notes so an AI can "see" the structure without guessing.
+- Consistent headings: Use <h2>, <h3> for levels.
+- One function per section: A section is either for learning or for drilling, not both.
+- One idea per line: Short lines > chunky paragraphs.
+- Avoid visual noise: Depend purely on structure.
+
+UNIVERSAL TEMPLATE TO FOLLOW EXACTLY (IN HTML):
 
 <h2>Key Ideas</h2>
-<ul><li>[Idea]</li></ul>
+<ul>
+  <li>[Idea]</li>
+</ul>
 
 <h2>Definitions</h2>
-<ul><li><strong>[TERM]:</strong> [Definition]</li></ul>
+<ul>
+  <li><strong>TERM:</strong> [Definition]</li>
+</ul>
 
 <h2>Formulas / Processes (if applicable)</h2>
 <ul>
@@ -523,7 +531,9 @@ STRUCTURAL RULES:
 <p><strong>A:</strong> [Answer]</p>
 
 <h2>Common Traps / Misconceptions</h2>
-<ul><li>[Trap 1]</li></ul>
+<ul>
+  <li>[Trap 1]</li>
+</ul>
 
 <h2>Practice Questions</h2>
 <p>1) [Question]<br>A) [Option]<br>B) [Option]<br>C) [Option]<br>D) [Option]</p>
@@ -740,8 +750,7 @@ ${skillContext.toLowerCase().includes('math') || skillContext.toLowerCase().incl
   </li>
 </ul>`}
 
-Wrap key terms in: <span class="interactive-term" data-def="concise definition">Term</span>
-Use <strong> for important concepts. Be thorough and specific to SAT content. Output ONLY HTML.`;
+Use <strong> for important concepts. Be thorough and specific to SAT content. Output ONLY HTML. No markdown formatting.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
@@ -830,53 +839,37 @@ export const generateAPLesson = async (subject: string, unit: string, topic: str
   return smartGenerate(async () => {
     const prompt = `Generate a massively comprehensive AP ${subject} lesson for ${unit}: ${topic}
 
-Target Length: Minimum 400 words up to 5000 words. Make it extremely detailed and much longer than a standard summary. Absolutely do not make it short.
+Target Length: Minimum 400 words. Make it extremely detailed. Absolutely do not make it short.
 MISSION: Create college-level study materials matching official College Board AP standards structured for AI readability.
 
-CONTENT REQUIREMENTS:
-- Extensive detail, rigorous academic vocabulary.
-- Focus on conceptual understanding, causation, and deeply interconnected analysis.
-- Provide AP level frameworks for analysis (e.g., PERSIA for history).
+CORE PRINCIPLES:
+- Design notes so an AI can "see" the structure without guessing.
+- Consistent headings: Use <h2>, <h3> for levels.
+- One function per section: A section is either for learning or for drilling, not both.
+- One idea per line: Short lines > chunky paragraphs.
+- Avoid visual noise: Depend purely on structure.
 
-STRUCTURAL RULES:
-- Consistent headings (h2, h3).
-- One function per section (learning or drilling).
-- One idea per line: Bullets > paragraphs.
-
-Use this universal template formatted strictly as HTML:
+UNIVERSAL TEMPLATE TO FOLLOW EXACTLY (IN HTML):
 
 <h2>Key Ideas</h2>
-<ul><li>[Idea 1]</li><li>[Idea 2]</li></ul>
+<ul>
+  <li>[Idea]</li>
+</ul>
 
 <h2>Definitions</h2>
-<ul><li><strong>[TERM]:</strong> [Definition]</li></ul>
+<ul>
+  <li><strong>TERM:</strong> [Definition]</li>
+</ul>
 
 <h2>Formulas / Processes (if applicable)</h2>
 <ul>
   <li><strong>Concept:</strong> [Name]
     <ul>
-      <li><strong>Formula/Process:</strong> [Details]</li>
+      <li><strong>Formula:</strong> [Details]</li>
       <li><strong>When to use:</strong> [Context]</li>
       <li><strong>Common trap:</strong> [Trap]</li>
     </ul>
   </li>
-</ul>
-
-<h2>Facts & Connections Layer</h2>
-<ul>
-  <li><strong>[Event/Concept]:</strong> [Date/Context] - [Significance]</li>
-  <li><strong>[Person/Entity]:</strong> [Role] - [Why important]</li>
-</ul>
-<h3>Connections / Themes</h3>
-<ul>
-  <li>[Theme 1] &rarr; [Impact/Result]</li>
-</ul>
-
-<h2>Reasoning Skills & Application</h2>
-<ul>
-  <li><strong>Causation:</strong> [Example]</li>
-  <li><strong>Continuity and change:</strong> [Example]</li>
-  <li><strong>Comparison:</strong> [Example]</li>
 </ul>
 
 <h2>Examples</h2>
@@ -884,15 +877,16 @@ Use this universal template formatted strictly as HTML:
 <p><strong>A:</strong> [Answer]</p>
 
 <h2>Common Traps / Misconceptions</h2>
-<ul><li>[Trap]</li></ul>
+<ul>
+  <li>[Trap 1]</li>
+</ul>
 
 <h2>Practice Questions</h2>
 <p>1) [Question]<br>A) [Option]<br>B) [Option]<br>C) [Option]<br>D) [Option]</p>
 
 HTML FORMATTING (STRICTLY NO MARKDOWN):
 - Use only semantic HTML (<h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>)
-- Wrap 20+ critical terms in: <span class="interactive-term" data-def="precise definition">Term</span>
-Output ONLY HTML.`;
+- Output ONLY HTML. No markdown, no wrappers block. Start straight with <h2>.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }

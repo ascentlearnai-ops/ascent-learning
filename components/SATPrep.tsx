@@ -480,16 +480,22 @@ const TopicsSection = () => {
     setLoadError(null);
     try {
       const type = skill.title.includes('Math') || skill.promptContext.includes('equations') || skill.promptContext.includes('functions') ? 'MATH' : 'READING_WRITING';
-      const [lesson, qs] = await Promise.all([
-        generateSATLesson(skill.title + '. ' + (skill.promptContext || '')),
-        generateSATQuestions(5, type, skill.promptContext) // Reduced to 5 as requested
-      ]);
+
+      // Load lesson individually first so users don't wait for questions!
+      const lesson = await generateSATLesson(skill.title + '. ' + (skill.promptContext || ''));
       setLessonContent(lesson);
-      setLessonQuestions(qs);
+      setLoading(false); // Enable the modal to show the summary immediately!
+
+      // Generate questions in the background concurrently
+      generateSATQuestions(5, type, skill.promptContext).then(qs => {
+        setLessonQuestions(qs);
+      }).catch(e => {
+        console.error("Failed background quiz generation:", e);
+      });
+
     } catch (e: any) {
       console.error('Lesson load failed:', e);
       setLoadError(e?.message || 'Unable to load lesson. Check your API key and try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -586,19 +592,23 @@ const SkillModal = ({ skill, content, initialQuestions = [], loading, error, onR
   };
 
   const styledLesson = (content || "")
-    .replace(/<h2>/g, '<h2 class="text-xl md:text-2xl font-bold mb-6 mt-10 text-white flex items-center gap-3"><span class="w-1 h-6 bg-primary-500 rounded-full"></span>')
-    .replace(/<\/h2>/g, '</h2>')
-    .replace(/<h3>/g, '<h3 class="text-lg md:text-xl font-semibold text-zinc-100 mt-8 mb-4 pl-4 border-l-2 border-primary-500/40">')
-    .replace(/<p>/g, '<p class="text-zinc-300 leading-7 md:leading-8 mb-6 text-base md:text-lg font-light tracking-wide">')
-    .replace(/<ul>/g, '<ul class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5">')
-    .replace(/<ol>/g, '<ol class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5 list-decimal list-inside">')
-    .replace(/<li>/g, '<li class="flex items-start gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0"></span><span>')
-    .replace(/<\/li>/g, '</span></li>')
-    .replace(/<strong>/g, '<strong class="text-primary-300 font-bold border-b border-primary-500/30 pb-0.5">')
-    .replace(/<em>/g, '<em class="text-zinc-200 not-italic font-medium">')
-    .replace(/<pre>/g, '<pre class="bg-black/50 p-6 rounded-2xl border border-white/10 text-white font-mono text-sm overflow-x-auto mb-8 whitespace-pre-wrap">')
-    .replace(/<code>/g, '<code class="bg-primary-900/20 text-primary-300 px-2 py-1 rounded font-mono text-sm border border-primary-500/20">')
-    .replace(/<blockquote>/g, '<blockquote class="border-l-4 border-primary-500/50 pl-6 italic text-zinc-400 my-8 py-2 bg-primary-500/5 rounded-r-xl">')
+    .replace(/<h2[^>]*>/gi, '<h2 class="text-xl md:text-2xl font-bold mb-6 mt-10 text-white flex items-center gap-3"><span class="w-1 h-6 bg-primary-500 rounded-full"></span>')
+    .replace(/<\/h2>/gi, '</h2>')
+    .replace(/<h3[^>]*>/gi, '<h3 class="text-lg md:text-xl font-semibold text-zinc-100 mt-8 mb-4 pl-4 border-l-2 border-primary-500/40">')
+    .replace(/<p[^>]*>/gi, '<p class="text-zinc-300 leading-7 md:leading-8 mb-6 text-base md:text-lg font-light tracking-wide">')
+    .replace(/<ul[^>]*>/gi, '<ul class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5">')
+    .replace(/<ol[^>]*>/gi, '<ol class="space-y-3 mb-8 text-zinc-300 bg-zinc-900/30 p-4 md:p-6 rounded-2xl border border-white/5 list-decimal list-inside">')
+    .replace(/<li[^>]*>/gi, '<li class="flex items-start gap-3"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0"></span><span>')
+    .replace(/<\/li>/gi, '</span></li>')
+    .replace(/<strong[^>]*>/gi, '<strong class="text-primary-300 font-bold border-b border-primary-500/30 pb-0.5">')
+    .replace(/<em[^>]*>/gi, '<em class="text-zinc-200 not-italic font-medium">')
+    .replace(/<pre[^>]*>/gi, '<pre class="bg-[#0A0A0A] p-6 rounded-2xl border border-white/10 text-zinc-300 font-mono text-sm overflow-x-auto mb-8 whitespace-pre-wrap shadow-inner">')
+    .replace(/<code[^>]*>/gi, '<code class="bg-[#111] text-primary-300 px-2 py-1 rounded-md font-mono text-sm border border-white/10 shadow-sm">')
+    .replace(/\\\(/g, '<code class="bg-[#111] text-primary-300 px-2 py-0.5 mx-1 rounded-md font-mono text-sm border border-white/10 shadow-sm">')
+    .replace(/\\\)/g, '</code>')
+    .replace(/\\\[/g, '<div class="bg-[#111] text-primary-300 p-4 md:p-6 rounded-2xl font-mono text-center my-6 border border-white/10 shadow-inner overflow-x-auto break-words">')
+    .replace(/\\\]/g, '</div>')
+    .replace(/<blockquote[^>]*>/gi, '<blockquote class="border-l-4 border-primary-500/50 pl-6 italic text-zinc-400 my-8 py-2 bg-primary-500/5 rounded-r-xl">')
     .replace(/<div(?:.*?|)class="[^"]*example[^"]*"(?:.*?|)>/gi, '<div class="bg-gradient-to-br from-primary-900/20 to-transparent border border-primary-500/20 p-6 md:p-8 rounded-2xl mb-8 relative overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-primary-500/50"></div>');
 
   // -- Embedded Quiz Logic --

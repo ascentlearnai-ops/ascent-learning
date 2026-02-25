@@ -32,7 +32,6 @@ export const GenerationLoaderModal: React.FC<GenerationLoaderModalProps> = ({
                             <X size={20} />
                         </button>
                     )}
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none mix-blend-overlay"></div>
 
                     <div className="relative flex justify-center items-center w-24 h-24 mb-8">
                         <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-primary-500/80 animate-spin" style={{ animationDuration: '2s' }}></div>
