@@ -716,6 +716,20 @@ Rules:
 - correctAnswer: 0-based index (0=A, 1=B, 2=C, 3=D)
 - explanation: 2-3 sentences, why correct and why the main distractor is wrong
 - Use SAT phrasing: "Which choice best...", "What is the value of..."
+- Strive for extreme realism matching official SAT style and formatting.
+
+Detailed Guidelines for Question Content:
+${type === 'MATH' ? `Cover these specific types of questions accurately:
+1. Algebra – rational equation
+2. Functions – composition (e.g. given f(2)=7 and f(-1)=6, find a+b for f(x)=ax^2+bx+3)
+3. Systems – word problem (e.g. costs for one-time fee and hourly rates)
+4. Geometry – circle & line (e.g. distance between intersection points of a circle and a line)
+5. Exponential – growth (e.g. bacteria doubling over time)` : `Cover these specific types of questions accurately:
+1. Rhetoric – logical transition (using In other words, Nevertheless, etc.)
+2. Sentence structure – comma/fragment (identifying correct sentence boundaries and punctuation)
+3. Word choice – precision (selecting the most contextually appropriate word)
+4. Reading – inference (interpreting critics vs scholars disagreements in short passages)
+5. Concision & redundancy (choosing the most concise phrasing without losing meaning)`}
 
 Output ONLY a valid JSON array (no markdown, no extra text):
 [${formatExample}]`;
@@ -748,13 +762,13 @@ export const generateAPLesson = async (subject: string, unit: string, topic: str
   return smartGenerate(async () => {
     const prompt = `Generate a massively comprehensive AP ${subject} lesson for ${unit}: ${topic}
 
-Target Length: 2000 - 3000 words.Absolutely do not make it short.
+Target Length: 4000 - 5000 words. Make it extremely detailed and much longer than a standard summary. Absolutely do not make it short.
   MISSION: Create college - level study materials matching official College Board AP standards.
 
 CONTENT REQUIREMENTS:
 - Extensive detail, rigorous academic vocabulary.
 - Focus on conceptual understanding, causation, and deeply interconnected analysis.
-- Provide AP level frameworks for analysis(e.g., PERSIA for history).
+- Provide AP level frameworks for analysis (e.g., PERSIA for history).
 
 ORGANIZATION STRUCTURE:
 <h2>Learning Objectives </h2>
