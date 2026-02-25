@@ -1112,10 +1112,11 @@ export const generateWeeklyPlan = async (goals: string[]): Promise<Array<{
     const prompt = `Convert the following user scheduling request into a structured JSON plan: "${combinedGoals}"
 
 INSTRUCTIONS:
-1. Identify if they requested a specific number of days, days of the week, or times of day(e.g. "after 5pm").
-2. Default to a 7 - day schedule if no timeframe is given.
-3. Generate 1 - 4 highly actionable study tasks for each designated day.
-4. If a time constraint is requested(e.g., "after 5pm"), make sure "startTime" and "endTime" reflect that constraint exactly(e.g., using 24 - hour time like "17:00" and "18:30").Otherwise, use reasonable times(like "09:00" or "14:00").
+1. Act as an elite, high-performance study schedule architect. Check if they requested a specific timeframe (e.g. days of the week, or times like "after 5pm"). 
+2. Default to a progressive 7-day schedule if no timeframe is given.
+3. Generate 1-3 highly actionable, DIVERSE study tasks for each designated day.
+4. CRITICAL RULE: NEVER REPEAT THE EXACT SAME TASK TITLE ON MULTIPLE DAYS. Each day must represent a clear progression (e.g., Day 1: "Initial Concept Review", Day 2: "Targeted Practice Problems", Day 3: "Timed Mini-Exam").
+5. Time Constraints: If they ask for "after 5pm" or "only mornings", strictly obey that in the "startTime" and "endTime" (using 24-hr format, e.g., "17:00", "09:00"). Ensure tasks are realistically spaced 1-2 hours apart.
 
 Format strictly as a JSON array where "day" is "Monday", "Tuesday", etc:
 [

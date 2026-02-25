@@ -161,6 +161,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               EXPLORE ARCHITECTURE
             </button>
           </div>
+
+          {/* Elite Scholars Performance Ticker */}
+          <div className="mt-16 pt-16 border-t border-white/5 animate-enter stagger-1 hidden md:block">
+            <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest mb-8">Trusted by Elite Scholars Across the Globe</p>
+            <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 opacity-70">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg"><Activity size={20} className="text-blue-400" /></div>
+                <div className="text-left">
+                  <div className="text-xl font-bold text-white font-sans">2.4M+</div>
+                  <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Concepts Synthesized</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg"><Brain size={20} className="text-purple-400" /></div>
+                <div className="text-left">
+                  <div className="text-xl font-bold text-white font-sans">47%</div>
+                  <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Avg Recall Boost</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-500/10 rounded-lg"><Zap size={20} className="text-green-400" /></div>
+                <div className="text-left">
+                  <div className="text-xl font-bold text-white font-sans">&lt; 3.2s</div>
+                  <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Execution Latency</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Dashboard Hologram */}
@@ -266,8 +294,47 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         </div>
       </section>
 
+      {/* Workflow Section */}
+      <section id="workflow" className="py-24 md:py-32 relative border-t border-white/5 bg-[#020202]">
+        <div className="absolute inset-0 bg-noise opacity-10 pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-blue-900/10 blur-[100px] rounded-full pointer-events-none"></div>
+
+        <div className="max-w-[1600px] mx-auto px-6 md:px-12 relative z-10">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight font-sans">Execution Protocol</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed font-sans">
+              A systematic approach to breaking down complex subjects and permanently retaining information.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto relative">
+            {/* Connecting Line */}
+            <div className="hidden md:block absolute top-[48px] left-[15%] right-[15%] h-px bg-gradient-to-r from-blue-500/0 via-blue-500/30 to-blue-500/0"></div>
+
+            <WorkflowStep
+              number="01"
+              title="Synthesize"
+              desc="Upload source materials or input raw concepts. The Neural Engine instantly restructures it into optimized study models."
+              icon={<Layers size={32} />}
+            />
+            <WorkflowStep
+              number="02"
+              title="Retain"
+              desc="Engage with adaptive flashcards and active recall quizzes generated directly from your structured data."
+              icon={<Zap size={32} />}
+            />
+            <WorkflowStep
+              number="03"
+              title="Conquer"
+              desc="Track telemetry, manage time via the Strategic Planner, and dominate exams with perfect recall."
+              icon={<Rocket size={32} />}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Pricing - REDESIGNED: GLOSSY, MONO FONTS, SEAMLESS */}
-      <section id="pricing" className="py-40 relative">
+      <section id="pricing" className="py-40 relative border-t border-white/5">
         {/* Seamless Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#020202] via-[#050505] to-black"></div>
 
