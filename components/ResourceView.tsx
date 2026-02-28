@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Book, Layers, MessageSquare, CheckCircle, RotateCw, Send, Sparkles, User, AlertTriangle, Lock, Copy, Download, Check, Trophy, ChevronRight, ChevronLeft, HelpCircle } from 'lucide-react';
 import { Resource, Flashcard, QuizQuestion } from '../types';
 import { getResourceById } from '../services/mockDb';
-import { chatWithResource } from '../services/aiService';
+import { chatWithResource } from '../services/geminiService';
 import { validateInput, dailyChatLimiter, getTierLimits } from '../utils/security';
 
 interface ResourceViewProps {

@@ -259,7 +259,7 @@ NO markdown code blocks. Output pure HTML only.`
 };
 
 // Generate flashcards
-export const generateFlashcards = async (text: string): Promise<Flashcard[]> => {
+export const generateFlashcards = async (text: string, count: number = 8): Promise<Flashcard[]> => {
   const cacheKey = getCacheKey('flashcards', text);
   const isTopic = isShortOrUrl(text);
 
@@ -272,7 +272,7 @@ export const generateFlashcards = async (text: string): Promise<Flashcard[]> => 
       contents: [{
         role: 'user',
         parts: [{
-          text: `Create 10-15 educational flashcards from this content.
+          text: `Create ${count} educational flashcards from this content.
 ${prompt}
 
 Format as JSON array:
@@ -605,7 +605,95 @@ Simple, clear language.`
   }, cacheKey);
 };
 
+// Compatibility alias for APCenter
+export const generateAPSummary = async (subject: string, unit: string, topic: string): Promise<string> => {
+  return generateAPLesson(subject, unit, topic);
+};
+
+// Compatibility alias for APCenter
+export const generateAPQuiz = async (
+  count: number,
+  subject: string,
+  unit: string,
+  difficulty: 'easy' | 'medium' | 'hard'
+): Promise<QuizQuestion[]> => {
+  return generateAPQuestions(count, subject, unit, difficulty);
+};
+
+// Generate weekly plan for StrategicPlanner flexibly based on user goals
+export const generateWeeklyPlan = async (goals: string[]): Promise<Array<{
+  day: string;
+  tasks: Array<{ title: string, startTime: string, endTime: string }>;
+}>> => {
+  const combinedGoals = goals.join(', ');
+  const cacheKey = getCacheKey('smart_plan', combinedGoals);
+
+  return smartGenerate(async (model) => {
+    const prompt = `Convert the following user scheduling request into a structured JSON plan: "${combinedGoals}"
+
+INSTRUCTIONS:
+1. Identify if they requested a specific number of days, days of the week, or times of day(e.g. "after 5pm").
+2. Default to a 7 - day schedule if no timeframe is given.
+3. Generate 1 - 4 highly actionable study tasks for each designated day.
+4. If a time constraint is requested(e.g., "after 5pm"), make sure "startTime" and "endTime" reflect that constraint exactly(e.g., using 24 - hour time like "17:00" and "18:30").Otherwise, use reasonable times(like "09:00" or "14:00").
+
+Format strictly as a JSON array where "day" is "Monday", "Tuesday", etc:
+[
+  {
+    "day": "Monday",
+    "tasks": [
+      { "title": "Review AP Calc Limits", "startTime": "17:00", "endTime": "18:30" }
+    ]
+  }
+]
+
+Output ONLY valid JSON.Make it strictly parseable JSON.`;
+
+    const result = await model.generateContent({
+      contents: [{
+        role: 'user',
+        parts: [{ text: prompt }]
+      }]
+    });
+
+    const text = result.response.text();
+    const json = parseAIResponse(text);
+
+    if (Array.isArray(json) && json.length > 0) {
+      return json.map((day: any) => ({
+        day: day.day || 'Unknown',
+        tasks: Array.isArray(day.tasks) ? day.tasks : []
+      }));
+    }
+
+    // Fallback
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days.map(day => ({
+      day,
+      tasks: [{ title: `Study session for ${goals[0] || 'your goals'}`, startTime: '09:00', endTime: '10:00' }]
+    }));
+  }, cacheKey);
+};
+
 // Fallback stubs for deprecated functions
 export const generateFullSATExam = async () => {
   throw new Error("Use generateSATQuestions with specific modules instead.");
+};
+
+// Image Generation using free Pollinations.ai API (no API key required, unlimited limits)
+export const generateImage = async (prompt: string): Promise<string> => {
+  try {
+    // Generate a random seed so duplicate prompts don't get the cached image
+    const seed = Math.floor(Math.random() * 1000000);
+    // Pollinations generates images instantly strictly via URL encoding
+    const encodedPrompt = encodeURIComponent(`Clean, precise, minimalist educational diagram on a white background: ${prompt}`);
+
+    // Using the free pollinations.ai image API which has exceptionally high limits and is completely free
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=1024&height=1024&nologo=true`;
+
+    return imageUrl;
+  } catch (err) {
+    console.error("Image generation error:", err);
+    return "";
+  }
 };

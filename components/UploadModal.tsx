@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Youtube, Type, UploadCloud, Loader2, AlertCircle, Lock, CheckCircle, Brain, Database, FileText, ArrowUpCircle, Mic, Square } from 'lucide-react';
 import { createResource } from '../services/mockDb';
-import { generateSummary, generateFlashcards, generateQuiz, synthesizeVideoContent } from '../services/aiService';
+import { generateSummary, generateFlashcards, generateQuiz, synthesizeVideoContent } from '../services/geminiService';
 import { Resource } from '../types';
 import { validateInput, dailyUploadLimiter, getTierLimits, getUserTier } from '../utils/security';
 import * as pdfjsLib from 'pdfjs-dist';

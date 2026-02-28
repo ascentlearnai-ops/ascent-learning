@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, ChevronRight, GraduationCap, ArrowLeft, Brain, Zap, Target, Layers, Play, CheckCircle, Lock, AlertTriangle, X } from 'lucide-react';
 import { AP_COURSES, APCourse, APUnit } from '../data/apCourses';
-import { generateAPLesson, generateAPQuestions, generateFlashcards } from '../services/aiService';
+import { generateAPLesson, generateAPQuestions, generateFlashcards } from '../services/geminiService';
 import { createResource } from '../services/mockDb';
 import { Resource } from '../types';
 import { getUserTier } from '../utils/security';

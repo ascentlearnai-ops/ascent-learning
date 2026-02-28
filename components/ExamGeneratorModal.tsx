@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Youtube, Type, Plus, Trash2, Brain, Loader2, Target, Layers, UploadCloud, FileCheck } from 'lucide-react';
-import { generateMultiSourceQuiz } from '../services/aiService';
+import { generateMultiSourceQuiz } from '../services/geminiService';
 import { createResource } from '../services/mockDb';
 import { Resource } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';

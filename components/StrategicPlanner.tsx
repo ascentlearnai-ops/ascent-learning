@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, ArrowRight, RotateCcw, CheckCircle, Calendar, Plus } from 'lucide-react';
 import { CalendarEvent } from '../types';
-import { generateWeeklyPlan } from '../services/aiService';
+import { generateWeeklyPlan } from '../services/geminiService';
 
 const DAY_MAP: Record<string, 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun'> = {
   monday: 'Mon', mon: 'Mon', tuesday: 'Tue', tue: 'Tue', wednesday: 'Wed', wed: 'Wed',

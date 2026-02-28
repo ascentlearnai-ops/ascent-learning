@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, RotateCcw, Play, ChevronRight, Clock, AlertTriangle, Target, Calculator, PenTool, Layout, X, Lock, Keyboard, Trophy } from 'lucide-react';
 import { SAT_MATH_DOMAINS, SAT_READING_DOMAINS, SATDomain, SATSkill } from '../data/satData';
-import { generateSATQuestions, generateSATLesson } from '../services/aiService';
+import { generateSATLesson, generateSATQuestions } from '../services/geminiService';
 import { QuizQuestion } from '../types';
 import { getUserTier } from '../utils/security';
 import { GenerationLoaderModal } from './GenerationLoaderModal';
