@@ -75,17 +75,31 @@ const setCachedResponse = (key: string, data: any) => {
 const parseAIResponse = (text: string | undefined): any => {
   if (!text) return [];
   try {
-    const cleanText = text
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .replace(/^\s*\[?\s*/, '')
-      .replace(/\s*\]?\s*$/, '')
-      .trim();
+    let cleanText = text.trim();
 
-    if (cleanText.startsWith('[') || cleanText.startsWith('{')) {
-      return JSON.parse(cleanText);
+    // Remove markdown code blocks if present
+    cleanText = cleanText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+    const firstBracket = cleanText.indexOf('[');
+    const lastBracket = cleanText.lastIndexOf(']');
+    const firstBrace = cleanText.indexOf('{');
+    const lastBrace = cleanText.lastIndexOf('}');
+
+    // Extract just the array or object to ignore conversational text
+    if (firstBracket !== -1 && lastBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+      cleanText = cleanText.substring(firstBracket, lastBracket + 1);
+    } else if (firstBrace !== -1 && lastBrace !== -1) {
+      cleanText = cleanText.substring(firstBrace, lastBrace + 1);
     }
-    return JSON.parse(`[${cleanText}]`);
+
+    const parsed = JSON.parse(cleanText);
+
+    // Most callers expect an array. Protect against single returned objects.
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return [parsed];
+    }
+
+    return parsed;
   } catch (e) {
     console.error("JSON Parse Error:", e, "Text:", text?.substring(0, 200));
     return [];
@@ -422,50 +436,67 @@ export const generateSATQuestions = async (
 
   return smartGenerate(async (model) => {
     const typeDesc = type === 'MATH' ? 'SAT Math' : 'SAT Reading & Writing';
-    const diffDesc = difficulty || 'mixed difficulty';
-    const contextDesc = context ? `Focus on: ${context}` : 'Cover diverse topics';
+    const contextLine = context ? `Focus on: ${context}.` : '';
+    const passageLine = type === 'READING_WRITING'
+      ? `Each question MUST include a "passage" field (60-100 words, authentic text excerpt). Questions must test comprehension, vocabulary, or grammar based on the passage.`
+      : '';
+    const domainNote = type === 'MATH'
+      ? `Cover: algebra, advanced math, data analysis, geometry/trig.`
+      : `Cover: craft & structure, information & ideas, conventions, expression of ideas.`;
+
+    const formatExample = type === 'READING_WRITING'
+      ? `{"passage":"...","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}`
+      : `{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}`;
+
+    const prompt = `Generate exactly ${count} high-quality ${typeDesc} questions for the digital SAT (2024 format).
+${contextLine}
+${passageLine}
+${domainNote}
+
+Rules:
+- 4 plausible answer choices; distractors from common student errors
+- correctAnswer: 0-based index (0=A, 1=B, 2=C, 3=D)
+- explanation: 2-3 sentences, why correct and why the main distractor is wrong
+- Use SAT phrasing: "Which choice best...", "What is the value of..."
+- Strive for extreme realism matching official SAT style and formatting.
+
+Detailed Guidelines for Question Content:
+${type === 'MATH' ? `Cover these specific types of questions accurately:
+1. Algebra – rational equation
+2. Functions – composition (e.g. given f(2)=7 and f(-1)=6, find a+b for f(x)=ax^2+bx+3)
+3. Systems – word problem (e.g. costs for one-time fee and hourly rates)
+4. Geometry – circle & line (e.g. distance between intersection points of a circle and a line)
+5. Exponential – growth (e.g. bacteria doubling over time)` : `Cover these specific types of questions accurately:
+1. Rhetoric – logical transition (using In other words, Nevertheless, etc.)
+2. Sentence structure – comma/fragment (identifying correct sentence boundaries and punctuation)
+3. Word choice – precision (selecting the most contextually appropriate word)
+4. Reading – inference (interpreting critics vs scholars disagreements in short passages)
+5. Concision & redundancy (choosing the most concise phrasing without losing meaning)`}
+
+Output ONLY a valid JSON array (no markdown, no extra text):
+[${formatExample}]`;
 
     const result = await model.generateContent({
       contents: [{
         role: 'user',
-        parts: [{
-          text: `Create ${count} ${typeDesc} questions (${diffDesc}).
-${contextDesc}
-
-${type === 'READING_WRITING' ? `
-IMPORTANT: For each question, include a short passage (50-150 words) in the "passage" field.
-The question should reference this passage.
-` : ''}
-
-Format as JSON array:
-[
-  {
-    ${type === 'READING_WRITING' ? '"passage": "Short reading passage here...",\n    ' : ''}"question": "Question text?",
-    "options": ["A", "B", "C", "D"],
-    "correctAnswer": 0,
-    "explanation": "Why this is correct",
-    "type": "multiple-choice"
-  }
-]
-
-No LaTeX, use plain text.
-Output ONLY the JSON array.`
-        }]
+        parts: [{ text: prompt }]
       }]
     });
 
     const json = parseAIResponse(result.response.text());
-    return Array.isArray(json)
-      ? json.map((q: any, index: number) => ({
-        id: `sat-${type}-${Date.now()}-${index}`,
-        passage: q.passage || '',
-        question: q.question || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        type: 'multiple-choice' as const
-      }))
-      : [];
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate SAT questions. Please try again.");
+    }
+
+    return json.map((q: any, index: number) => ({
+      id: `sat-${type}-${Date.now()}-${index}`,
+      passage: q.passage || '',
+      question: q.question || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      explanation: q.explanation || '',
+      type: 'multiple-choice' as const
+    }));
   }, cacheKey);
 };
 
@@ -510,31 +541,130 @@ export const generateAPQuestions = async (
   const cacheKey = getCacheKey(`ap_${subject}_${unit}`, difficulty);
 
   return smartGenerate(async (model) => {
+    const difficultyGuidance = {
+      easy: 'Foundation level: Test basic understanding of key concepts, definitions, and direct cause-effect relationships. 60-75% of students should answer correctly.',
+      medium: 'Application level: Require analysis, comparison, or application of concepts to new situations. 40-55% of students should answer correctly.',
+      hard: 'Synthesis level: Demand evaluation, synthesis of multiple concepts, or complex historical/scientific reasoning. 20-35% of students should answer correctly.'
+    };
+
+    const prompt = `MISSION: Generate EXACTLY ${count} authoritative, college-level multiple-choice questions for AP ${subject}.
+Topic focus: ${unit}
+Target difficulty: ${difficulty} (AP scale 1-5, where 4-5 is ${difficulty === 'hard' ? 'required' : 'optional'})
+
+MAXIMUM REASONING DEPTH REQUIRED:
+- Break down explanations into structured, numbered step-by-step tutor logic.
+- Verify final answers meticulously. Prioritize accuracy over speed.
+- Minimize hallucinations. Ensure distractors are based on plausible student misconceptions.
+
+COLLEGE BOARD AP STANDARDS:
+These questions must be indistinguishable from official AP exam questions.
+Reference: Released AP exams, AP Classroom question banks, official College Board practice materials.
+
+AP QUESTION CHARACTERISTICS:
+- Assess higher-order thinking: analysis, synthesis, evaluation, application
+- Require understanding of causation, comparison, change over time, or conceptual relationships
+- Often include stimulus material (quoted text, data, images described)
+- Emphasize skill application over content recall
+- Use formal academic language and discipline-specific terminology
+
+QUESTION CONSTRUCTION BY SUBJECT:
+
+FOR AP HISTORY (APUSH, World, Euro):
+- Use historical thinking skills: causation, comparison, continuity/change, contextualization
+- Include time period context: "Between 1750-1900..." "In the post-WWII era..."
+- Reference specific evidence but test interpretation, not memorization
+- Question stems: "Which of the following best explains..." "The excerpt most directly reflects..." "Compared to X, Y was characterized by..."
+
+FOR AP SCIENCE (Bio, Chem, Physics):
+- Test conceptual understanding of scientific principles
+- Include data interpretation, experimental design, or model application
+- Use technical terminology correctly
+- Question stems: "If X is increased while Y remains constant..." "Which mechanism best explains..." "The data support which conclusion..."
+
+FOR AP ENGLISH (Lit, Lang):
+- Include passage excerpts (30-80 words) testing rhetorical analysis
+- Focus on author's purpose, rhetorical strategies, stylistic choices
+- Question stems: "The passage primarily serves to..." "The author's tone can best be described as..." "In context, the phrase X functions to..."
+
+ANSWER CHOICE REQUIREMENTS (A-D):
+- Parallel grammatical structure across all four
+- Similar length (within 10 words of each other)
+- Use complete sentences or sophisticated phrases (not single words)
+- Academic language: "facilitated" not "helped", "demonstrates" not "shows"
+
+DISTRACTOR CREATION (OFFICIAL AP QUALITY):
+AP exam distractors are exceptionally sophisticated. Each incorrect choice must:
+- Contain partial truths or connect to related but distinct concepts
+- Result from plausible but flawed reasoning
+- Use correct terminology applied incorrectly
+- Be tempting to students who understand 70% of the material
+
+Examples of AP-quality distractors:
+- History: Reference events from adjacent time periods with similar but incorrect causation
+- Science: Use correct processes but apply them to wrong scenarios
+- English: Identify correct literary devices but misinterpret their function
+
+AVOID (these are NOT AP-level):
+✗ Simple definitional questions: "The term X means..."
+✗ Isolated fact recall: "What year did..." "Who was the first to..."
+✗ Obviously wrong choices that no prepared student would select
+✗ Choices that are too similar or create confusion through ambiguity
+
+EXPLANATION STRUCTURE:
+40-70 words explaining:
+1. Why the correct answer is right (cite specific reasoning/evidence)
+2. Why the most tempting distractor is wrong (identify the logical flaw)
+3. Use phrases like: "correctly identifies the causal relationship..." "accurately applies the principle of..." "fails to account for..."
+
+DIFFICULTY CALIBRATION:
+${difficulty === 'easy' ? '- Test direct application of core concepts\n- Single-step reasoning\n- Clearly defined parameters' : ''}
+${difficulty === 'medium' ? '- Require analysis across multiple concepts\n- Two-step reasoning or comparison\n- Some ambiguity that careful reading resolves' : ''}
+${difficulty === 'hard' ? '- Demand synthesis of multiple units/concepts\n- Multi-step reasoning with subtle distinctions\n- Require elimination of highly plausible distractors' : ''}
+
+JSON FORMAT: We want exactly ${count} questions in the array.
+[
+  {
+    "question": "In the context of [specific AP content], which of the following most accurately [assess specific skill]?",
+    "options": [
+      "A) It [sophisticated distractor - common misconception]",
+      "B) It [sophisticated distractor - adjacent concept]",
+      "C) It [CORRECT ANSWER - evidence-based and precise]",
+      "D) It [sophisticated distractor - partially correct but flawed]"
+    ],
+    "correctAnswer": 2,
+    "explanation": "Choice C correctly identifies [specific evidence/reasoning]. Choice A, while referencing [valid point], incorrectly suggests [flaw]. Choice B confuses [related concept] with [actual concept].",
+    "type": "multiple-choice"
+  }
+]
+
+FINAL QUALITY STANDARDS:
+✓ Would this appear on an official AP ${subject} exam?
+✓ Does it test disciplinary skills, not just content knowledge?
+✓ Are all four choices defensible to a partially-prepared student?
+✓ Is the academic language precise and formal?
+✓ Does the explanation teach, not just confirm the answer?
+
+Output ONLY valid JSON. No markdown, no preamble.`;
+
     const result = await model.generateContent({
       contents: [{
         role: 'user',
-        parts: [{
-          text: `Create ${count} AP ${subject} questions for ${unit}.
-Difficulty: ${difficulty}
-
-Format as JSON array with standard quiz question structure.
-Make questions AP exam-style and rigorous.
-Output ONLY the JSON array.`
-        }]
+        parts: [{ text: prompt }]
       }]
     });
 
     const json = parseAIResponse(result.response.text());
-    return Array.isArray(json)
-      ? json.map((q: any, index: number) => ({
-        id: `ap-${subject}-${Date.now()}-${index}`,
-        question: q.question || '',
-        options: Array.isArray(q.options) ? q.options : [],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        type: 'multiple-choice' as const
-      }))
-      : [];
+    if (!Array.isArray(json) || json.length === 0) {
+      throw new Error("Failed to generate AP questions. Please try again.");
+    }
+    return json.map((q: any, index: number) => ({
+      id: `ap-${subject}-${Date.now()}-${index}`,
+      question: q.question || '',
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+      explanation: q.explanation || '',
+      type: 'multiple-choice' as const
+    }));
   }, cacheKey);
 };
 
