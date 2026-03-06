@@ -14,6 +14,7 @@ import SATPrep from './SATPrep';
 import AdminPanel from './AdminPanel';
 import { Logo } from './Logo';
 import { BetaWelcomeModal } from './BetaWelcomeModal';
+import CursorParticles from './CursorParticles';
 import { getResources } from '../services/mockDb';
 import { getUserTier, unlockSession, initIdleMonitor, setMemoryTier } from '../utils/security';
 import { supabase } from '../lib/supabase';
@@ -249,8 +250,14 @@ const App: React.FC = () => {
   };
 
   if (!isAuthenticated) {
-    return <LandingPage onLogin={handleLogin} />;
+    return (
+      <>
+        <CursorParticles />
+        <LandingPage onLogin={handleLogin} />
+      </>
+    );
   }
+
 
   // Handle beta modal trigger once authenticated
   if (isAuthenticated && userTier && userTier !== 'Initiate' && userTier !== 'Scholar' && userTier !== 'Admin') {
