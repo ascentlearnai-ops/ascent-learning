@@ -370,58 +370,125 @@ export const generateImage = async (prompt: string): Promise<string> => {
   }
 };
 
-export const synthesizeVideoContent = async (url: string): Promise<string> => {
+// Extract YouTube video ID from any URL format
+const extractVideoId = (url: string): string | null => {
   try {
-    const urlObj = new URL(url);
-    let videoId = urlObj.searchParams.get('v');
-    if (!videoId && urlObj.hostname === 'youtu.be') {
-      videoId = urlObj.pathname.slice(1);
+    const u = new URL(url);
+    if (u.searchParams.get('v')) return u.searchParams.get('v');
+    if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+    const embedMatch = u.pathname.match(/\/embed\/([^/?]+)/);
+    if (embedMatch) return embedMatch[1];
+  } catch {}
+  const match = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
+};
+
+// Parse YouTube XML transcript into plain text
+const parseTranscriptXml = (xml: string): string => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'text/xml');
+  const nodes = doc.getElementsByTagName('text');
+  let out = '';
+  for (let i = 0; i < nodes.length; i++) {
+    const t = nodes[i].textContent || '';
+    out += t.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>') + ' ';
+  }
+  return out.replace(/\s+/g, ' ').trim();
+};
+
+export const synthesizeVideoContent = async (url: string): Promise<string> => {
+  const videoId = extractVideoId(url);
+  if (!videoId) throw new Error("Invalid YouTube URL. Please paste a valid youtube.com or youtu.be link.");
+
+  // ── Tier 1: Direct timedtext JSON API (fastest, no page scraping needed) ──
+  try {
+    const timedtextUrl = `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3&xorb=2&xobt=3&xovt=3`;
+    const data = await fetchWithFallback(timedtextUrl);
+    const json = JSON.parse(data);
+    if (json?.events?.length > 0) {
+      const transcript = json.events
+        .filter((e: any) => e.segs)
+        .flatMap((e: any) => e.segs.map((s: any) => (s.utf8 || '').replace(/\n/g, ' ')))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (transcript.length > 200) {
+        console.log(`✓ Tier 1 transcript: ${transcript.length} chars`);
+        return transcript;
+      }
     }
-    if (!videoId || videoId.length < 10) throw new Error("Invalid YouTube URL");
+  } catch (e) {
+    console.warn('Tier 1 (timedtext JSON) failed:', e);
+  }
 
-    const targetUrl = 'https://www.youtube.com/watch?v=' + videoId;
-    const html = await fetchWithFallback(targetUrl);
+  // ── Tier 2: Page scrape → extract caption tracks → fetch XML ──
+  try {
+    const html = await fetchWithFallback(`https://www.youtube.com/watch?v=${videoId}`);
 
-    // Find the player response JSON
-    const regex = /"captions":({.*?})/;
-    const match = html.match(regex);
-    if (!match) throw new Error("No captions/transcripts found for this video");
+    // More robust regex — captures the full captionTracks array
+    const tracksMatch = html.match(/"captionTracks":(\[.*?\])/s);
+    if (tracksMatch) {
+      const tracks: any[] = JSON.parse(tracksMatch[1]);
+      const englishTrack = tracks.find(t => t.languageCode === 'en' || t.name?.simpleText?.toLowerCase().includes('english')) || tracks[0];
 
-    const captionsData = JSON.parse(match[1]);
-    const captionTracks = captionsData?.playerCaptionsTracklistRenderer?.captionTracks;
-    if (!captionTracks || captionTracks.length === 0) throw new Error("No captions available for this video");
-
-    const englishTrack = captionTracks.find((track: any) => track.languageCode === 'en' || (track.name?.simpleText || '').toLowerCase().includes('english')) || captionTracks[0];
-
-    // Fetch the transcript XML using fallback proxies
-    const xml = await fetchWithFallback(englishTrack.baseUrl);
-
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xml, "text/xml");
-    const textNodes = xmlDoc.getElementsByTagName("text");
-
-    let transcript = "";
-    for (let i = 0; i < textNodes.length; i++) {
-      const content = textNodes[i].textContent;
-      if (content) {
-        transcript += content.replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"') + " ";
+      if (englishTrack?.baseUrl) {
+        const xml = await fetchWithFallback(englishTrack.baseUrl);
+        const transcript = parseTranscriptXml(xml);
+        if (transcript.length > 200) {
+          console.log(`✓ Tier 2 transcript: ${transcript.length} chars`);
+          return transcript;
+        }
       }
     }
 
-    const cleanTranscript = transcript.trim().replace(/\\s+/g, ' ');
-    if (!cleanTranscript) {
-      throw new Error("Extracted transcript is empty.");
+    // Also try to extract video title + description for Tier 3 fallback
+    const titleMatch = html.match(/"title":"([^"]+)"/);
+    const descMatch = html.match(/"shortDescription":"([^"]+)"/);
+    const title = titleMatch ? titleMatch[1] : '';
+    const desc = descMatch ? descMatch[1].substring(0, 500) : '';
+
+    if (title) {
+      console.warn('No transcript found — falling back to AI synthesis from metadata');
+      return `VIDEO_METADATA_FALLBACK: Title: ${title}. Description: ${desc}. VideoID: ${videoId}`;
     }
-    return cleanTranscript;
-  } catch (error: any) {
-    console.error("Transcript extraction error:", error);
-    throw new Error(`Failed to extract YouTube transcript: ${error.message}`);
+  } catch (e) {
+    console.warn('Tier 2 (page scrape) failed:', e);
   }
+
+  // ── Tier 3: oEmbed metadata (always works, no CORS issues) ──
+  try {
+    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    const resp = await fetch(oembedUrl);
+    if (resp.ok) {
+      const data = await resp.json();
+      const title = data.title || 'Unknown Video';
+      const author = data.author_name || '';
+      console.warn('Using oEmbed metadata fallback for:', title);
+      return `VIDEO_METADATA_FALLBACK: Title: "${title}" by ${author}. VideoID: ${videoId}`;
+    }
+  } catch (e) {
+    console.warn('Tier 3 (oEmbed) failed:', e);
+  }
+
+  throw new Error("Could not retrieve transcript for this video. It may have captions disabled. Try pasting the video content as text instead.");
 };
 
-// Generate summary
 export const generateSummary = async (text: string): Promise<string> => {
   if (!text) return "";
+
+  // Handle YouTube metadata fallback — no transcript, so generate notes from video title
+  const isMetadataFallback = text.startsWith('VIDEO_METADATA_FALLBACK:');
+  if (isMetadataFallback) {
+    const metaInfo = text.replace('VIDEO_METADATA_FALLBACK:', '').trim();
+    const metaCacheKey = getCacheKey('summary_meta', text);
+    const metaPrompt = `A student wants to study a YouTube video: ${metaInfo}
+
+Generate comprehensive study notes for this video topic as if you are a knowledgeable tutor. Use 8th-grade vocabulary. Cover the main concepts that would be discussed based on the title. Target: 600-1000 words. Use the same HTML structure with <h2> sections and <span class=\"interactive-term\" data-def=\"...\"> for key vocabulary.`;
+    return smartGenerate(async () => {
+      const response = await callDeepSeek([{ role: 'user', content: metaPrompt }], 0.3, 2500);
+      return cleanHtml(response) || '<h2>Error generating notes</h2>';
+    }, metaCacheKey);
+  }
 
   const cacheKey = getCacheKey('summary', text);
   const isTopic = isShortOrUrl(text);
@@ -434,21 +501,21 @@ export const generateSummary = async (text: string): Promise<string> => {
     let maxTokens: number;
 
     if (wordCount < 1000) {
-      targetWords = '350–600 words';
+      targetWords = '400–600 words';
       termCount = '8–12 key terms';
       maxTokens = 1500;
     } else if (wordCount < 5000) {
-      targetWords = '600–1000 words';
+      targetWords = '600–900 words';
       termCount = '15–25 key terms';
       maxTokens = 2500;
     } else if (wordCount < 10000) {
-      targetWords = '900–1400 words';
+      targetWords = '800–1200 words';
       termCount = '25–40 key terms';
       maxTokens = 3500;
     } else {
-      targetWords = '1200–1800 words';
+      targetWords = '1000–1500 words';
       termCount = '35–50 key terms';
-      maxTokens = 4500;
+      maxTokens = 4000;
     }
 
     const contextPrompt = isTopic
