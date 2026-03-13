@@ -427,135 +427,84 @@ export const generateSummary = async (text: string): Promise<string> => {
   const isTopic = isShortOrUrl(text);
 
   return smartGenerate(async () => {
-    const contentLength = text.length;
     const wordCount = text.split(/\s+/).length;
 
-    // Adaptive length based on source material depth
-    let summaryGuidance = '';
-    let termGuidance = '';
-    let maxTokens = 4000;
+    let targetWords: string;
+    let termCount: string;
+    let maxTokens: number;
 
     if (wordCount < 1000) {
-      summaryGuidance = 'Target Length: Minimum 400 words (Focused summary). Focus on core concepts only.';
-      termGuidance = 'Identify 10-15 core academic terms critical to understanding.';
-      maxTokens = 2000;
+      targetWords = '350–600 words';
+      termCount = '8–12 key terms';
+      maxTokens = 1500;
     } else if (wordCount < 5000) {
-      summaryGuidance = 'Target Length: Minimum 400 words up to 1500 words (Standard summary). Cover main ideas, key details, and significance.';
-      termGuidance = 'Identify 20-30 advanced academic terms critical to understanding.';
-      maxTokens = 3500;
+      targetWords = '600–1000 words';
+      termCount = '15–25 key terms';
+      maxTokens = 2500;
     } else if (wordCount < 10000) {
-      summaryGuidance = 'Target Length: Minimum 400 words up to 3000 words (Comprehensive summary). Include detailed analysis, context, chronological organization, causes/effects, and specific examples/evidence.';
-      termGuidance = 'Identify 30-50 advanced academic terms critical to understanding.';
-      maxTokens = 5000;
+      targetWords = '900–1400 words';
+      termCount = '25–40 key terms';
+      maxTokens = 3500;
     } else {
-      summaryGuidance = 'Target Length: Minimum 400 words up to 4000 words (Extensive summary). Provide in-depth coverage organized chronologically with full context, cause-and-effect analysis, and specific evidence.';
-      termGuidance = 'Identify 40-60 advanced academic terms critical to understanding.';
-      maxTokens = 6000;
+      targetWords = '1200–1800 words';
+      termCount = '35–50 key terms';
+      maxTokens = 4500;
     }
 
     const contextPrompt = isTopic
-      ? `Generate professional study materials on the topic: "${text}". Research and provide comprehensive academic content suitable for AP-level study.`
-      : `Analyze and synthesize the following source material into elite-level study content:\n\n${text.substring(0, 50000)}`;
+      ? `Generate expert study notes on: "${text}"`
+      : `Analyze this source material:\n\n${text.substring(0, 50000)}`;
 
     const prompt = `${contextPrompt}
 
-MISSION: Create structured study materials that meet College Board AP and SAT standards, comparable to premium educational platforms ($10M+ tier).
+Create the ULTIMATE study summary. Target length: ${targetWords}.
 
-CONTENT REQUIREMENTS:
-${summaryGuidance}
+WRITING RULES (non-negotiable):
+- Use 8th-grade vocabulary for ALL explanations — write like you're explaining to a smart middle schooler
+- Still include ALL advanced terms and concepts — just explain them simply
+- Explain WHY things matter, not just WHAT happened
+- Use cause-and-effect thinking throughout
 
-ORGANIZATION STRUCTURE:
-1. If material spans multiple time periods or generations, organize chronologically with clear period headers
-2. Use hierarchical HTML structure: <h2> for major periods/themes, <h3> for subtopics
-3. Present information in logical flow: context → main content → significance
-4. Specifically include cause-and-effect analysis and specific examples/evidence from the source
+KEY VOCABULARY (${termCount}):
+Wrap every important term like this:
+<span class="interactive-term" data-def="simple 10-word definition here">Term</span>
+Definitions must be in plain language a 13-year-old would understand instantly.
 
-WRITING STANDARDS:
-- ALL summaries MUST be written using strictly 8th-grade level vocabulary so they are extremely easy to understand.
-- However, you MUST STILL INCLUDE all the advanced academic vocabulary, concepts, and detailed information from the original source.
-- Explain complex ideas simply without dumbing down the actual information.
-- Professional tone matching AP textbooks but highly accessible.
-- Focus on: key ideas, causes and effects, historical/conceptual significance, patterns, and connections.
-- Emphasize WHY things matter, not just WHAT happened.
+HTML STRUCTURE (no markdown):
+<h2>Big Ideas</h2>
+<p>2-3 sentence overview in simple language</p>
 
-INTERACTIVE VOCABULARY:
-- ${termGuidance}
-- Wrap in: <span class="interactive-term" data-def="precise, clear definition">Term</span>
-- Definitions should be concise (10-15 words) and academically precise
+<h2>[Main Topic 1]</h2>
+<p>Explanation using simple words. Cause → Effect. Why it matters.</p>
 
-OUTPUT STRUCTURE AND DEPTH:
-- Generate a comprehensive, step-by-step structured summary.
-- Maximize reasoning depth and focus on concept-teaching.
-- Prioritize accuracy and tutor-level clarity.
-- Use numbered steps, clear headings, and concise summaries.
-- Avoid hallucinations by strictly sticking to the provided text.
+<h2>[Main Topic 2]</h2>
+...
 
-HTML FORMATTING (NO MARKDOWN):
-- Use semantic HTML: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>
-- Bold key terms on first use: <strong>term</strong>
-- Organize complex information with bulleted lists when appropriate
-- NO markdown syntax (no ##, **, etc.)
-
-CORE PRINCIPLES:
-- Design notes so an AI can "see" the structure without guessing.
-- Consistent headings: Use <h2>, <h3> for levels.
-- One function per section: A section is either for learning or for drilling, not both.
-- One idea per line: Short lines > chunky paragraphs.
-- Avoid visual noise: Depend purely on structure.
-
-UNIVERSAL TEMPLATE TO FOLLOW EXACTLY (IN HTML):
-
-<h2>Key Ideas</h2>
+<h2>Key Vocabulary</h2>
 <ul>
-  <li>[Idea]</li>
+  <li><strong>TERM:</strong> Simple definition</li>
 </ul>
 
-<h2>Definitions</h2>
-<ul>
-  <li><strong>TERM:</strong> [Definition]</li>
-</ul>
+<h2>Why This Matters</h2>
+<p>Big picture significance in plain language</p>
 
-<h2>Formulas / Processes (if applicable)</h2>
-<ul>
-  <li><strong>Concept:</strong> [Name]
-    <ul>
-      <li><strong>Formula:</strong> [Details]</li>
-      <li><strong>When to use:</strong> [Context]</li>
-      <li><strong>Common trap:</strong> [Trap]</li>
-    </ul>
-  </li>
-</ul>
+FORMATTING:
+- Use <h2> for main sections, <h3> for sub-points
+- Bold terms on first use: <strong>term</strong>
+- Use <ul><li> for lists
+- Keep paragraphs short (3-5 sentences max)
+- NO filler phrases like "it is important to note"
 
-<h2>Examples</h2>
-<p><strong>Q:</strong> [Question]</p>
-<p><strong>A:</strong> [Answer]</p>
-
-<h2>Common Traps / Misconceptions</h2>
-<ul>
-  <li>[Trap 1]</li>
-</ul>
-
-<h2>Practice Questions</h2>
-<p>1) [Question]<br>A) [Option]<br>B) [Option]<br>C) [Option]<br>D) [Option]</p>
-
-OUTPUT QUALITY STANDARDS:
-✓ Comparable to Khan Academy, Kaplan, Princeton Review premium content
-✓ Publication-ready formatting
-✓ Zero fluff or unnecessary elaboration
-✓ Evidence-based and factually rigorous
-✓ Appropriate depth matching source material complexity
-
-Generate ONLY the HTML content. Begin immediately with <h2> tags.`;
+Output ONLY HTML starting with <h2>.`;
 
     const response = await callDeepSeek([
       { role: "user", content: prompt }
-    ], 0.3, maxTokens); // Optimized dynamic tokens for fast response (<30s)
+    ], 0.25, maxTokens);
 
     return cleanHtml(response) || "<h2>Error generating summary</h2>";
   }, cacheKey);
 };
 
-// Generate flashcards
 export const generateFlashcards = async (text: string, count: number = 8): Promise<Flashcard[]> => {
   const cacheKey = getCacheKey(`flashcards_${count}`, text);
   const isTopic = isShortOrUrl(text);
@@ -767,53 +716,56 @@ export const generateSATQuestions = async (
   context?: string,
   difficulty?: 'easy' | 'hard' | 'adaptive'
 ): Promise<QuizQuestion[]> => {
-  const cacheKey = getCacheKey(`sat_${type}_${count}`, context || 'gen');
+  const cacheKey = getCacheKey(`sat_${type}_${count}_${difficulty}`, context || 'gen');
 
   return smartGenerate(async () => {
-    const typeDesc = type === 'MATH' ? 'SAT Math' : 'SAT Reading & Writing';
-    const contextLine = context ? `Focus on: ${context}.` : '';
-    const passageLine = type === 'READING_WRITING'
-      ? `Each question MUST include a "passage" field (60-100 words, authentic text excerpt). Questions must test comprehension, vocabulary, or grammar based on the passage.`
-      : '';
-    const domainNote = type === 'MATH'
-      ? `Cover: algebra, advanced math, data analysis, geometry/trig.`
-      : `Cover: craft & structure, information & ideas, conventions, expression of ideas.`;
+    const isMath = type === 'MATH';
+    const contextLine = context ? `Topic focus: ${context}.` : '';
 
-    const formatExample = type === 'READING_WRITING'
-      ? `{"passage":"...","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}`
-      : `{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}`;
+    const mathDomains = `Cover a mix of:
+- Algebra: linear equations, systems, inequalities
+- Advanced Math: quadratics, polynomials, functions
+- Problem-Solving & Data: ratios, percentages, statistics
+- Geometry & Trig: area, angles, right triangles, unit circle`;
 
-    const prompt = `Generate exactly ${count} high-quality ${typeDesc} questions for the digital SAT (2024 format).
+    const rwDomains = `Cover a mix of:
+- Craft & Structure: word choice, text purpose, transitions
+- Information & Ideas: central idea, evidence, inferences
+- Expression of Ideas: rhetorical goals, sentence flow
+- Standard English: grammar, punctuation, sentence boundaries
+Each question MUST include a "passage" field (50-80 word authentic-style excerpt).`;
+
+    const difficultyNote = difficulty === 'easy'
+      ? 'Questions should be straightforward — test one concept at a time.'
+      : difficulty === 'hard'
+      ? 'Questions should be tricky — use multi-step reasoning and realistic wrong answers based on common mistakes.'
+      : 'Mix of easy, medium, and hard questions like a real SAT section.';
+
+    const formatExample = isMath
+      ? `{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":1,"explanation":"...","type":"multiple-choice"}`
+      : `{"passage":"...","question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":1,"explanation":"...","type":"multiple-choice"}`;
+
+    const prompt = `Generate exactly ${count} official-style digital SAT ${isMath ? 'Math' : 'Reading & Writing'} questions.
 ${contextLine}
-${passageLine}
-${domainNote}
 
-Rules:
-- 4 plausible answer choices; distractors from common student errors
+STYLE: Mirror real SAT questions from official College Board practice tests. Questions should feel identical to what students see on test day.
+
+${isMath ? mathDomains : rwDomains}
+
+DIFFICULTY: ${difficultyNote}
+
+QUESTION RULES:
+- 4 answer choices (A–D); wrong answers come from real student mistakes
 - correctAnswer: 0-based index (0=A, 1=B, 2=C, 3=D)
-- explanation: 2-3 sentences, why correct and why the main distractor is wrong
-- Use SAT phrasing: "Which choice best...", "What is the value of..."
-- Strive for extreme realism matching official SAT style and formatting.
+- Use real SAT phrasing: "Which choice best completes...", "What is the value of...", "Which finding, if true, would most support..."
+- Explanations: 2-3 sentences in simple 8th-grade language — explain WHY the right answer is right AND why the top wrong answer tricks people
 
-Detailed Guidelines for Question Content:
-${type === 'MATH' ? `Cover these specific types of questions accurately:
-1. Algebra – rational equation
-2. Functions – composition (e.g. given f(2)=7 and f(-1)=6, find a+b for f(x)=ax^2+bx+3)
-3. Systems – word problem (e.g. costs for one-time fee and hourly rates)
-4. Geometry – circle & line (e.g. distance between intersection points of a circle and a line)
-5. Exponential – growth (e.g. bacteria doubling over time)` : `Cover these specific types of questions accurately:
-1. Rhetoric – logical transition (using In other words, Nevertheless, etc.)
-2. Sentence structure – comma/fragment (identifying correct sentence boundaries and punctuation)
-3. Word choice – precision (selecting the most contextually appropriate word)
-4. Reading – inference (interpreting critics vs scholars disagreements in short passages)
-5. Concision & redundancy (choosing the most concise phrasing without losing meaning)`}
-
-Output ONLY a valid JSON array (no markdown, no extra text):
+OUTPUT: Valid JSON array only. No markdown, no extra text.
 [${formatExample}]`;
 
     const response = await callJsonModel([
       { role: "user", content: prompt }
-    ], 6000);
+    ], 4000);
 
     const json = parseAIResponse(response);
     if (!Array.isArray(json) || json.length === 0) {
@@ -832,7 +784,6 @@ Output ONLY a valid JSON array (no markdown, no extra text):
   }, cacheKey);
 };
 
-// AP lesson generation
 export const generateAPLesson = async (subject: string, unit: string, topic: string): Promise<string> => {
   const cacheKey = getCacheKey('ap_lesson', `${subject}_${unit}_${topic} `);
 
@@ -903,122 +854,59 @@ export const generateAPQuestions = async (
   unit: string,
   difficulty: 'easy' | 'medium' | 'hard'
 ): Promise<QuizQuestion[]> => {
-  const cacheKey = getCacheKey(`ap_${subject}_${unit} `, difficulty);
+  const cacheKey = getCacheKey(`ap_${subject}_${unit}`, difficulty);
 
   return smartGenerate(async () => {
-    const difficultyGuidance = {
-      easy: 'Foundation level: Test basic understanding of key concepts, definitions, and direct cause-effect relationships. 60-75% of students should answer correctly.',
-      medium: 'Application level: Require analysis, comparison, or application of concepts to new situations. 40-55% of students should answer correctly.',
-      hard: 'Synthesis level: Demand evaluation, synthesis of multiple concepts, or complex historical/scientific reasoning. 20-35% of students should answer correctly.'
+    const diffMap = {
+      easy:   'Straightforward — test basic understanding of core concepts. Most students who studied should get it.',
+      medium: 'Requires analysis or applying a concept to a new situation. Some students will be tricked.',
+      hard:   'Requires connecting multiple concepts or spotting a subtle distinction. Even prepared students may miss it.'
     };
 
-    const prompt = `MISSION: Generate EXACTLY ${count} authoritative, college - level multiple - choice questions for AP ${subject}.
-Topic focus: ${unit}
-Target difficulty: ${difficulty} (AP scale 1 - 5, where 4 - 5 is ${difficulty === 'hard' ? 'required' : 'optional'})
+    const subjectGuidance = subject.toLowerCase().includes('history') || subject.toLowerCase().includes('apush') || subject.toLowerCase().includes('world') || subject.toLowerCase().includes('euro')
+      ? `History-specific: Use real historical thinking skills — causation, comparison, continuity/change over time.
+Include time period context ("Between 1865–1900..." or "During the Cold War...").
+Test interpretation, not memorization. Question stems: "Which best explains...", "The evidence most directly supports...", "Compared to X, Y was characterized by..."`
+      : subject.toLowerCase().includes('bio') || subject.toLowerCase().includes('chem') || subject.toLowerCase().includes('physics') || subject.toLowerCase().includes('science')
+      ? `Science-specific: Test conceptual understanding, experimental design, or data interpretation.
+Use real lab-style scenarios. Question stems: "Which conclusion is best supported by...", "If X increases, Y would..."`
+      : subject.toLowerCase().includes('english') || subject.toLowerCase().includes('lang') || subject.toLowerCase().includes('lit')
+      ? `English-specific: Include a short passage (30–60 words). Test rhetorical analysis, author's purpose, or stylistic choices.
+Question stems: "The passage primarily serves to...", "The author's tone can best be described as..."`
+      : `Test higher-order thinking: analysis, application, evaluation. Use discipline-specific terminology correctly.`;
 
-MAXIMUM REASONING DEPTH REQUIRED:
-- Break down explanations into structured, numbered step - by - step tutor logic.
-- Verify final answers meticulously.Prioritize accuracy over speed.
-- Minimize hallucinations.Ensure distractors are based on plausible student misconceptions.
+    const prompt = `Generate exactly ${count} AP ${subject} multiple-choice questions. Topic: ${unit}.
 
-COLLEGE BOARD AP STANDARDS:
-These questions must be indistinguishable from official AP exam questions.
-  Reference: Released AP exams, AP Classroom question banks, official College Board practice materials.
+STYLE: These must look and feel like real questions from official AP released exams and AP Classroom. A student should not be able to tell the difference.
 
-AP QUESTION CHARACTERISTICS:
-- Assess higher - order thinking: analysis, synthesis, evaluation, application
-  - Require understanding of causation, comparison, change over time, or conceptual relationships
-    - Often include stimulus material(quoted text, data, images described)
-      - Emphasize skill application over content recall
-        - Use formal academic language and discipline - specific terminology
+DIFFICULTY: ${diffMap[difficulty]}
 
-QUESTION CONSTRUCTION BY SUBJECT:
+SUBJECT GUIDANCE:
+${subjectGuidance}
 
-FOR AP HISTORY(APUSH, World, Euro):
-- Use historical thinking skills: causation, comparison, continuity / change, contextualization
-  - Include time period context: "Between 1750-1900..." "In the post-WWII era..."
-    - Reference specific evidence but test interpretation, not memorization
-      - Question stems: "Which of the following best explains..." "The excerpt most directly reflects..." "Compared to X, Y was characterized by..."
+ANSWER CHOICE RULES:
+- 4 choices (A–D), all plausible — no obviously wrong answers
+- Wrong choices use real misconceptions students have, not random errors
+- All choices similar length and parallel grammar
+- correctAnswer: 0-based index
 
-FOR AP SCIENCE(Bio, Chem, Physics):
-- Test conceptual understanding of scientific principles
-  - Include data interpretation, experimental design, or model application
-    - Use technical terminology correctly
-      - Question stems: "If X is increased while Y remains constant..." "Which mechanism best explains..." "The data support which conclusion..."
+EXPLANATION RULES (critical):
+- Write in simple 8th-grade vocabulary — explain like a friendly tutor
+- 2-3 sentences: (1) why the right answer is correct, (2) why the most tempting wrong answer fails
+- Use phrases like "This is right because...", "Choice X tricks you because..."
 
-FOR AP ENGLISH(Lit, Lang):
-- Include passage excerpts(30 - 80 words) testing rhetorical analysis
-  - Focus on author's purpose, rhetorical strategies, stylistic choices
-    - Question stems: "The passage primarily serves to..." "The author's tone can best be described as..." "In context, the phrase X functions to..."
-
-ANSWER CHOICE REQUIREMENTS(A - D):
-- Parallel grammatical structure across all four
-  - Similar length(within 10 words of each other)
-    - Use complete sentences or sophisticated phrases(not single words)
-      - Academic language: "facilitated" not "helped", "demonstrates" not "shows"
-
-DISTRACTOR CREATION(OFFICIAL AP QUALITY):
-AP exam distractors are exceptionally sophisticated.Each incorrect choice must:
-- Contain partial truths or connect to related but distinct concepts
-  - Result from plausible but flawed reasoning
-    - Use correct terminology applied incorrectly
-      - Be tempting to students who understand 70 % of the material
-
-Examples of AP - quality distractors:
-- History: Reference events from adjacent time periods with similar but incorrect causation
-  - Science: Use correct processes but apply them to wrong scenarios
-    - English: Identify correct literary devices but misinterpret their function
-
-  AVOID(these are NOT AP-level):
-✗ Simple definitional questions: "The term X means..."
-✗ Isolated fact recall: "What year did..." "Who was the first to..."
-✗ Obviously wrong choices that no prepared student would select
-✗ Choices that are too similar or create confusion through ambiguity
-
-EXPLANATION STRUCTURE:
-40 - 70 words explaining:
-1. Why the correct answer is right(cite specific reasoning / evidence)
-2. Why the most tempting distractor is wrong(identify the logical flaw)
-3. Use phrases like: "correctly identifies the causal relationship..." "accurately applies the principle of..." "fails to account for..."
-
-DIFFICULTY CALIBRATION:
-${difficulty === 'easy' ? '- Test direct application of core concepts\n- Single-step reasoning\n- Clearly defined parameters' : ''}
-${difficulty === 'medium' ? '- Require analysis across multiple concepts\n- Two-step reasoning or comparison\n- Some ambiguity that careful reading resolves' : ''}
-${difficulty === 'hard' ? '- Demand synthesis of multiple units/concepts\n- Multi-step reasoning with subtle distinctions\n- Require elimination of highly plausible distractors' : ''}
-
-JSON FORMAT: We want exactly ${count} questions in the array.
-[
-  {
-    "question": "In the context of [specific AP content], which of the following most accurately [assess specific skill]?",
-    "options": [
-      "A) It [sophisticated distractor - common misconception]",
-      "B) It [sophisticated distractor - adjacent concept]",
-      "C) It [CORRECT ANSWER - evidence-based and precise]",
-      "D) It [sophisticated distractor - partially correct but flawed]"
-    ],
-    "correctAnswer": 2,
-    "explanation": "Choice C correctly identifies [specific evidence/reasoning]. Choice A, while referencing [valid point], incorrectly suggests [flaw]. Choice B confuses [related concept] with [actual concept].",
-    "type": "multiple-choice"
-  }
-]
-
-FINAL QUALITY STANDARDS:
-✓ Would this appear on an official AP ${subject} exam ?
-✓ Does it test disciplinary skills, not just content knowledge ?
-✓ Are all four choices defensible to a partially - prepared student ?
-✓ Is the academic language precise and formal ?
-✓ Does the explanation teach, not just confirm the answer ?
-
-  Output ONLY valid JSON.No markdown, no preamble.`;
+OUTPUT: Valid JSON array only. No markdown.
+[{"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correctAnswer":2,"explanation":"...","type":"multiple-choice"}]`;
 
     const response = await callJsonModel([
       { role: "user", content: prompt }
-    ], 6000);
+    ], 4000);
 
     const json = parseAIResponse(response);
     if (!Array.isArray(json) || json.length === 0) {
       throw new Error("Failed to generate AP questions. Please try again.");
     }
+
     return json.map((q: any, index: number) => ({
       id: `ap-${subject}-${Date.now()}-${index}`,
       question: q.question || '',
@@ -1030,7 +918,6 @@ FINAL QUALITY STANDARDS:
   }, cacheKey);
 };
 
-// Chat with resource (streaming not supported, returns complete response)
 export const chatWithResource = async (
   query: string,
   context: string,
