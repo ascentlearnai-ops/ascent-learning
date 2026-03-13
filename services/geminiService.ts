@@ -25,7 +25,7 @@ const initializeAI = () => {
 
 // Model cascade: Free tier friendly models
 const MODEL_CASCADE = [
-  'gemini-2.0-flash-exp',      // Latest experimental flash (free tier)
+  'gemini-2.0-flash',           // Stable flash model (replaces deprecated gemini-2.0-flash-exp)
   'gemini-1.5-flash',          // Stable flash model (free tier)
   'gemini-1.5-flash-8b',       // Lighter model (free tier)
   'gemini-1.5-pro'             // Fallback pro model
@@ -134,7 +134,7 @@ const smartGenerate = async <T>(
   }
 
   const ai = initializeAI();
-  const maxAttempts = 3;
+  const maxAttempts = MODEL_CASCADE.length; // Try every model in the cascade
   let modelIndex = 0;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {

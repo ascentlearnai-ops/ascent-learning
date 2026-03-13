@@ -128,6 +128,8 @@ const App: React.FC = () => {
     const session = localStorage.getItem('ascent_session');
     const user = localStorage.getItem('ascent_username');
 
+
+    let unsubscribe: (() => void) | undefined;
     if (supabase) {
       supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session) {
@@ -162,7 +164,7 @@ const App: React.FC = () => {
         }
       });
 
-      return () => subscription.unsubscribe();
+      unsubscribe = () => subscription.unsubscribe();
     } else if (session) {
       setIsAuthenticated(true);
       setUserTier(getUserTier());
@@ -176,7 +178,10 @@ const App: React.FC = () => {
       if (user) unlockSession(user);
     };
     window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const handleLogin = async (username: string) => {

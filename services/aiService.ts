@@ -6,7 +6,7 @@ import axios from 'axios';
 const MODELS = {
   primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat
   json: "stepfun/step-3.5-flash:free",             // Switched to faster model to reduce overthinking for JSON
-  fallback: "stepfun/step-3.5-flash:free"
+  fallback: "meta-llama/llama-3.3-70b-instruct:free"    // Real fallback when StepFun is unavailable
 };
 
 // Start with primary, but allow override
