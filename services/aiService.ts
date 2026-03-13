@@ -5,7 +5,7 @@ import axios from 'axios';
 // Model selection — Dual Setup
 const MODELS = {
   primary: "stepfun/step-3.5-flash:free",          // summaries, lessons, strategic planner, chat
-  json: "stepfun/step-3.5-flash:free",             // Switched to faster model to reduce overthinking for JSON
+  json: "arcee-ai/trinity-large-preview:free",         // Trinity for quizzes, flashcards, SAT/AP questions
   fallback: "meta-llama/llama-3.3-70b-instruct:free"    // Real fallback when StepFun is unavailable
 };
 
